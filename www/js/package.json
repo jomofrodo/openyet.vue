@@ -1,0 +1,23 @@
+{
+  "name": "covid19",
+  "version": "1.0.0",
+  "description": "Covid 19 resources",
+  "main": "Gruntfile.js",
+  "dependencies": {
+    "@babel/polyfill": "^7.0.0",
+    "jquery": "^3.3.1",
+    "lodash": "^4.17.11"
+  },
+  "devDependencies": {
+    "grunt": "^1.0.3",
+    "grunt-bowercopy": "^1.2.4"
+  },
+  "scripts": {
+    "build": "grunt"
+  },
+  "keywords": [
+    "covid"
+  ],
+  "author": "jomofrodo@gmail.com",
+  "license": "ISC"
+}
