@@ -1,0 +1,22 @@
+{
+  "name": "covid",
+  "authors": [
+    "John Moore <jmoore@netazoic.com>"
+  ],
+  "description": "Bower resources for covid",
+  "main": "main.js",
+  "keywords": [
+	"covid"
+  ],
+  "license": "MIT",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+  }
+}

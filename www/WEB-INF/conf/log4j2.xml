@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration status="WARN"  packages="org.apache.logging.log4j.core,io.sentry.log4j2">
+  <Properties>
+    <Property name="ENT_LOG_FILE">ServENT.log</Property>
+    <Property name="LOG_DIR">e:/git_working/Netazoic/covid-19/todos/runtime/logs</Property>
+  </Properties>
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+    </Console>
+    <Sentry name="Sentry" />
+	<RollingFile name="ENT_LOG_FILE" fileName="${LOG_DIR}/${ENT_LOG_FILE}"
+	               filePattern="logs/$${date:yyyy-MM}/app-%d{MM-dd-yyyy}-%i.log.gz">
+	    <PatternLayout>
+	      <Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
+	    </PatternLayout>
+	    <Policies>
+	      <TimeBasedTriggeringPolicy />
+	      <SizeBasedTriggeringPolicy size="100 MB"/>
+	    </Policies>
+	</RollingFile>
+
+  </Appenders>
+  <Loggers>
+    <Logger name="com.netazoic.ENT.ServENT" level="DEBUG" additivity="false">
+      <AppenderRef ref="ENT_LOG_FILE"/>
+    </Logger>
+    <Root level="ERROR">
+      <AppenderRef ref="Console"/>
+      <appender-ref ref="Sentry" level="WARN" />
+    </Root>
+  </Loggers>
+</Configuration>

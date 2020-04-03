@@ -1,0 +1,28 @@
+{{> _include/header }}
+    <noscript>
+      <strong>We're sorry but covid-19 doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+    </noscript>
+    Retrieve remote data
+    <select name="dataSrc" onChange="getData(this);">
+    
+    	<option value="ALL">Get all data</option>
+    	<option value="JH_CONF">Get JH confirmed cases time series</option>
+    	<option value="JH_DEAD">Get JH new deaths time series</option>
+    	<option value="JH_RECOVER">Get JH recovered cases time series</option>
+    	<option value="CTP_STATES_DAILY">Get Covid Tracking Project states/daily</option>
+    </select>
+    <!-- built files will be auto injected -->
+{{> _include/footer }}
+
+<script src="/js/vendor/jquery/jquery.min.js"></script>
+<script>
+function getData(el){
+    let url ="/cvd/retrieveData?dataSrc=" + el.value;
+    $.get(url).then(function(ret){
+		alert("Data retrieved");
+    }).catch(function(err){
+		debugger;
+		alert(err.responseText);
+    });
+}
+</script>

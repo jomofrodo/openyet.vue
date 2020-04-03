@@ -1,0 +1,34 @@
+<ivy-module version="2.0">
+        <info organisation="com.netazoic" module="Todos.redux"/>
+        <configurations>
+            <conf name="prod"/>
+            <conf name="dev" extends="prod"/> 
+        </configurations>
+        <dependencies>
+             <dependency org="org.postgresql" name="postgresql" rev="42.2.9"/>
+             <dependency org="org.apache.commons" name="commons-lang3" rev="3.4"/>
+             <dependency org="commons-io" name="commons-io" rev="2.4"/>
+             <dependency org="com.fasterxml.jackson.core" name="jackson-core" rev="2.9.9"/>
+             <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="2.9.9"/>
+             <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="2.9.9"/>
+             <dependency org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-csv" rev="2.9.9"/>
+             
+             <dependency org="joda-time" name="joda-time" rev="2.9.1"/>      
+             <dependency org="org.pegdown" name="pegdown" rev="latest.integration"/>   
+             <dependency org="com.github.jknack" name="handlebars" rev="4.1.2"/>
+             
+          	<!-- SLF4J -->
+			<dependency org="org.slf4j" name="slf4j-api" rev="1.7.30"/>
+			
+	
+			<!-- log4j2 -->
+            <dependency org="org.apache.logging.log4j" name="log4j-api" rev="2.13.1" force="true" conf="dev->default" /> 
+  			<dependency org="org.apache.logging.log4j" name="log4j-core" rev="2.13.1" conf="dev->default" />
+
+    		<dependency org="org.apache.logging.log4j" name="log4j-slf4j-impl" rev="2.13.1" conf="dev->default" /> 
+			<dependency org="org.apache.logging.log4j" name="log4j-1.2-api" rev="2.13.1" conf="dev->default"/>  
+			<dependency org="io.sentry" name="sentry-log4j2" rev="1.7.22"  conf="dev->default" />  
+			
+                
+        </dependencies>
+</ivy-module>

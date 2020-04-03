@@ -1,0 +1,55 @@
+<project xmlns:ivy="antlib:org.apache.ivy.ant" name="Covid19" default="resolve">
+    
+    <property name="lib.dir" value="../../www/WEB-INF/lib" />
+	<property name="build.lib" value="./lib"/>
+	
+    <!-- ================================= 
+          target: resolve              
+         ================================= -->
+    <target name="resolve" description="--> retrieve dependencies with ivy">
+        <ivy:resolve />
+    </target>
+
+    <!-- ================================= 
+          target: retrieve
+          
+          Copy all needed jars to WEB-INF/lib/*.jar
+          Copy supporting src and javadoc archives into WEB-INF/lib/javadoc and src
+          Copy all needed jars to ~build/lib  for distribution purposes              
+         ================================= -->    
+    <target name="retrieve" description="retrieve dependencies with ivy" depends="clean">
+        <ivy:retrieve type="source,javadoc" conf="dev" pattern="${lib.dir}/[type]/[artifact]-[type]-[revision].[ext]"/>
+    	<!-- <ivy:retrieve conf="dev" pattern="${lib.dir}/[type]/[artifact]-[revision].[ext]"/> -->
+        <ivy:retrieve type="jar,bundle" conf="dev" pattern="${lib.dir}/[artifact]-[revision].[ext]"/>
+        <ivy:retrieve type="jar" conf="prod" pattern="${build.lib}/[conf]/[artifact]-[revision].[ext]"/>
+         
+    </target>
+	
+	
+	<!-- ==================== Clean Target ==================================== -->
+
+	<!-- The "clean" target deletes any previous "build" and "dist" directory, 
+		so that you can be ensured the application can be built from scratch. -->
+
+	<target name="clean" description="Delete old build files">
+
+		<!--<delete dir="${lib.dir}"/>-->
+		  <delete>
+		    <fileset dir="${lib.dir}" includes="**/*.jar"/>
+		  </delete>
+		<delete dir="${lib.dir}/source"/>
+		<delete dir="${lib.dir}/javadoc"/>
+		<!-- Delete dist build -->
+		<delete dir="${build.lib}"/>
+
+
+	</target>
+	
+	<target name="bootstrap" description="Used to install the ivy task jar">
+	    <mkdir dir="${user.home}/.ant/lib"/>
+	    <get dest="${user.home}/.ant/lib/ivy.jar" src="http://search.maven.org/remotecontent?filepath=org/apache/ivy/ivy/2.2.0/ivy-2.2.0.jar"/>
+	</target>
+
+    
+
+</project>

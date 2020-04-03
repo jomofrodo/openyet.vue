@@ -1,0 +1,12 @@
+	<servlet>
+		<servlet-name>Covid19</servlet-name>
+		<servlet-class>com.netazoic.covid.Covid19</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>Covid19</servlet-name>
+		<url-pattern>/cvd</url-pattern>
+		<url-pattern>/cvd/*</url-pattern>
+		<url-pattern>/home</url-pattern>
+	</servlet-mapping>
+
