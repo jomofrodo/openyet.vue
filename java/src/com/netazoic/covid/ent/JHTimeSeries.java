@@ -7,23 +7,18 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.HashMap;
 
+import com.netazoic.covid.ent.rdENT.DataFmt;
 import com.netazoic.ent.ENTException;
 import com.netazoic.ent.if_TP;
 import com.netazoic.util.NamedParameterStatement;
+import com.netazoic.util.SQLUtil;
 
 public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 	// A Johns Hopkins  time series entry
 	
-	public String state;
-	public String country;
-//	private Double lat;
-//	private Double lon;
-	public String date;
-	public Integer ct;
-	public String type;
+	protected ifDataType tsType;
+	DataFmt dataFmt = DataFmt.CSV;
 	
-	private ifDataSrc dataSrc;
-	private ifDataType tsType;
 	
 	public enum JH_TimeSeriesType implements ifDataType{
 		confirmed("C"), dead("D"), recovered("R");
@@ -50,7 +45,8 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 	
 	public enum JH_TP implements if_TP{
 
-        sql_CREATE_RECORDx("/Data/sql/JH/TimeSeries/psCreateRecord.sql");
+        sql_CREATE_RECORDx("/Data/sql/JH/TimeSeries/psCreateRecord.sql"),
+        sql_CREATE_COMBINED_RECS("/Data/sql/JH/TimeSeries/CreateCombinedRecs.sql");
 
 		
 		public String tPath;
@@ -76,16 +72,6 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 		initENT();
 	}
 
-	@Override
-	public void init(HashMap<String,Object> recMap) throws ENTException {
-		super.init(recMap);
-		this.type = this.tsType.getCode();
-	}
-//		state = (String) recMap.get(JH_Column.state.name());
-//		country = (String) recMap.get(JH_Column.country.name());
-//		date = (LocalDate) recMap.get(JH_Column.date.name());
-//		ct = (Integer) recMap.get(JH_Column.ct.name());
-//	}
 	
 	@Override
 	public void initENT() throws ENTException{
@@ -98,59 +84,12 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 	}
 	
 	@Override
-	public void setCon(Connection con) {
-		this.con = con;
-	}
-
-	@Override
-	public void setInsertStatement(PreparedStatement ps) throws SQLException {
-		ps.setString(1, this.state);
-		ps.setString(2, this.country);
-		Date sqlDate = java.sql.Date.valueOf(date);
-		ps.setDate(3, sqlDate);
-		ps.setInt(4, this.ct);
-		ps.setString(5, this.tsType.getCode());
-		
-	}
-
-	@Override
-	public void setUpdateStatement(PreparedStatement psUpdateRemoteData) throws SQLException {
-		// TODO Auto-generated method stub
-		
+	public Integer createCombinedRecs() throws Exception {
+		HashMap map = new HashMap();
+		String q =  parseUtil.parseQueryFile(JH_TP.sql_CREATE_COMBINED_RECS.tPath,map);
+		return SQLUtil.execSQL(q, con);
 	}
 	
-	@Override
-	public PreparedStatement setupExpireAllStatement(Connection con) throws SQLException {
-		String sql = "DELETE FROM covid.jh_timeseries WHERE type = ?";
-		PreparedStatement psDeleteRemoteData = con.prepareStatement(sql);
-		return psDeleteRemoteData;
-	}
-
-	@Override
-	public void setExpireAllStatement(PreparedStatement psDeleteRemoteData) throws SQLException {
-
-		psDeleteRemoteData.setString(1, this.tsType.getCode());
-	}
-
-	@Override
-	public void setCheckRecordStatement(PreparedStatement psSelectRemoteData) throws SQLException {
-
-		
-	}
-
-
-	@Override
-	public void deleteRecord(String webuserID, String comments) throws ENTException {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setType(ifDataType type) {
-		this.tsType = type;
-		
-	}
-
 	@Override
 	public Long createRecord(HashMap<String, Object> paramMap, Connection con) throws ENTException {
 		// TODO Auto-generated method stub
@@ -158,8 +97,36 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 	}
 
 	@Override
-	public void setInsertStatement(NamedParameterStatement nps) throws SQLException, ENTException {
-		super.setInsertStatement(nps);
+	public void deleteRecord(String webuserID, String comments) throws ENTException {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	@Override
+	public String getDataURL() {
+		return this.dataURL;
+	}
+
+	@Override
+	public ifDataSrc getSrc() {
+		return this.dataSrc;
+	
+	}
+
+	@Override
+	public void setCon(Connection con) {
+		this.con = con;
+	}
+
+	@Override
+	public void setExpireAllStatement(PreparedStatement psDeleteRemoteData) throws SQLException {
+	
+		psDeleteRemoteData.setString(1, this.tsType.getCode());
+	}
+
+	@Override
+	public void setInsertStatement(PreparedStatement ps) throws SQLException {
+//		NOT IN USE
 		
 	}
 
@@ -170,16 +137,35 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 	}
 
 	@Override
-	public ifDataSrc getSrc() {
-		return this.dataSrc;
-	
+	public void setType(ifDataType type) {
+		this.tsType = type;
+		
 	}
 
 	@Override
-	public void setInsertStatement(NamedParameterStatement nps, Connection con) throws SQLException, ENTException {
+	public PreparedStatement setupExpireAllStatement(Connection con) throws SQLException {
+		String sql = "DELETE FROM covid.jh_timeseries WHERE type = ?";
+		PreparedStatement psDeleteRemoteData = con.prepareStatement(sql);
+		return psDeleteRemoteData;
+	}
+
+	@Override
+	public void setUpdateStatement(PreparedStatement psUpdateRemoteData) throws SQLException {
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public SRC_ORG getSrcOrg() {
+		return this.srcOrg;
+	}
+	
+	@Override
+	public DataFmt getFormat() {
+		return this.dataFmt;
+	}
+
+
 		
 
 }

@@ -51,6 +51,9 @@ export default {
         return new moment(o.datechecked);
       }); //.reverse();
       return hrecs;
+    },
+    tag() {
+      return this.$route.params.tag;
     }
   },
   created() {
@@ -58,24 +61,28 @@ export default {
     vm.cols.forEach(function(key) {
       vm.sortOrders[key] = 1;
     });
-    this.getData(vm.urlCountriesCSV).then(recs =>{
-      let json = csvLib.csvToJSON(recs,1);
-      vm.countries = json;
-    });
-    this.getData(this.urlCombined).then(recs => {
-      vm.combined = recs;
-      // const urecs = _.uniqBy(recs, function (e) {
-      //   return e.country;
-      // });
-      // urecs.forEach(rec => vm.countries.push(rec.country));
-    });
-    // this.getData(this.urlCountries).then(recs => {
-    //   let countries = [];
-    //   recs.forEach(rec => {
-    //     countries.push(rec.name);
-    //   });
-    //   vm.countries = countries;
+    // this.getData(vm.urlCountriesCSV).then(recs =>{
+    //   let json = csvLib.csvToJSON(recs,1);
+    //   vm.countries = json;
     // });
+
+    const jsonStr = window.localStorage.getItem("countries.json");
+    if (jsonStr) vm.countries = JSON.parse(jsonStr);
+    else {
+      this.getData(vm.urlCountries)
+        .then(recs => {
+          // Write data to local storage'
+          window.localStorage.setItem("countries.json", JSON.stringify(recs));
+          vm.countries = recs;
+        })
+        .catch(err => alert(err));
+    }
+    this.getData(this.urlCombined).then(recs => {
+      const data = recs.filter(function(rec) {
+        return rec.state == null || rec.state === "";
+      });
+      vm.combined = data;
+    });
   },
   methods: {
     getData(url, recStore) {
@@ -84,6 +91,9 @@ export default {
         const recs = ret.data;
         return recs;
       });
+    },
+    clearCountryTable(){
+      window.localStorage.clear("countries.json");
     }
   }
 };

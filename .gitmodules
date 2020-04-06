@@ -1,3 +1,6 @@
 [submodule "java/ent"]
 	path = java/ent
 	url = git@github.com:Netazoic/Ent.git
+[submodule "www/app/covid/src/njsGrid"]
+	path = www/app/covid/src/njsGrid
+	url = git@github.com:Netazoic/njsGrid.git

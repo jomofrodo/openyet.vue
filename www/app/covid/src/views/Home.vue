@@ -17,9 +17,7 @@
                   exact
                   class="nav-link"
                   active-class="active"
-                >
-                  Static Feed
-                </router-link>
+                >Static Feed</router-link>
               </li>
               <li class="nav-item">
                 <router-link
@@ -27,15 +25,20 @@
                   exact
                   class="nav-link"
                   active-class="active"
-                >
-                  Dynamic Feed
-                </router-link>
+                >Dynamic Feed</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link
+                  :to="{ name: 'combined-grid' }"
+                  exact
+                  class="nav-link"
+                  active-class="active"
+                >Combined Data</router-link>
               </li>
             </ul>
           </div>
           <router-view></router-view>
         </div>
-
       </div>
     </div>
   </div>
@@ -48,14 +51,13 @@ import { FETCH_TAGS } from "@/store/actions.type";
 
 export default {
   name: "home",
-  components: {
-  },
+  components: {},
   mounted() {
     this.$store.dispatch(FETCH_TAGS);
   },
   computed: {
     // ...mapGetters(["isAuthenticated", "tags"]),
-    isAuthenticated(){
+    isAuthenticated() {
       return false;
     },
     tag() {

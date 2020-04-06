@@ -7,23 +7,30 @@ import java.sql.SQLException;
 import java.util.HashMap;
 
 import com.netazoic.covid.Covid19.CVD_DataSrc;
+import com.netazoic.covid.ent.rdENT.DataFmt;
+import com.netazoic.covid.ent.rdENT.SRC_ORG;
 import com.netazoic.ent.ENTException;
 import com.netazoic.util.NamedParameterStatement;
 
 public interface ifDataSrcWrapper {
 
+	void init(HashMap<String, Object> recMap) throws ENTException;
+
 	void setType(ifDataType type);
 
-	void setInsertStatement(NamedParameterStatement nps, Connection con) throws SQLException, ENTException;
+	void setInsertStatement(NamedParameterStatement nps) throws SQLException, ENTException;
 
 	void setCon(Connection con);
 
-	void init(HashMap<String, Object> recMap) throws ENTException;
+	PreparedStatement setupExpireAllStatement(Connection con) throws SQLException;
 
 	void setSrc(ifDataSrc src);
 
 	ifDataSrc getSrc();
+	
+	String getDataURL();
+	
+	SRC_ORG getSrcOrg();
 
-	PreparedStatement setupExpireAllStatement(Connection con) throws SQLException;
-
+	DataFmt getFormat();
 }

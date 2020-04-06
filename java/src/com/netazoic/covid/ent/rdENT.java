@@ -17,7 +17,9 @@ import org.joda.time.DateTime;
 
 import com.netazoic.ent.ENT;
 import com.netazoic.ent.ENTException;
+import com.netazoic.ent.if_SRC_ORG;
 import com.netazoic.util.NamedParameterStatement;
+import com.netazoic.util.SQLUtil;
 
 public abstract class rdENT<T> extends ENT<T> implements ifDataSrcWrapper {
 
@@ -27,9 +29,30 @@ public abstract class rdENT<T> extends ENT<T> implements ifDataSrcWrapper {
 	
 	NamedParameterStatement npsCreate;
 	ifDataSrc dataSrc;
+	String dataURL;
+	public SRC_ORG srcOrg;
 	
 	public enum DataFmt{
 		JSON, CSV
+	}
+	
+	public enum SRC_ORG implements if_SRC_ORG{
+		JH("Johns Hopkins"),
+		CTP("Covid Tracking Project");
+
+		String code;
+		String srcName;
+
+		SRC_ORG(String n){
+			this.code=this.name();
+			this.srcName = n;
+		}
+
+		@Override
+		public String getCode() {
+			return this.code;
+
+		}
 	}
 
 	@Override
@@ -58,36 +81,19 @@ public abstract class rdENT<T> extends ENT<T> implements ifDataSrcWrapper {
 		}
 	}
 
-	private String setupNPSInsertQuery() throws SQLException {
-		String q;
-		List<Field> flds = this.getLocalFields(new LinkedList<Field>(), this.getClass(), true);
-		q = "INSERT INTO " + this.nit.NIT_TABLE;
-		q += "(";
-		String fldName;
-		for(Field fld : flds) {
-			q += fld.getName() + ",";
-		}
-		q = q.substring(0,q.lastIndexOf(","));
-		q += ") \n";
-		q += " VALUES (";
-		for(Field fld : flds) {
-			q += ":" + fld.getName() + ",";
-		}
-		q = q.substring(0,q.lastIndexOf(","));
-		q += ");";
-		return q;
+	
+	
+	public Integer createCombinedRecs() throws Exception {
+		Integer retInt = 1;
+		return retInt;
 	}
 	
-	// Check for a local copy of a remote record
-	
-	
-	public NamedParameterStatement setupInsertStatement( Connection con) throws SQLException {
-		String q = this.setupNPSInsertQuery();
-		NamedParameterStatement nps = new NamedParameterStatement(con,q);
-		return nps;
+	public Integer expireCombinedRecs() throws SQLException {
+		//Expire all records of this type in the combined records table
+		String q = "DELETE FROM covid.combined WHERE sourcecode = '" + this.srcOrg.code + "'";
+		return SQLUtil.execSQL(q, con);
 	}
-
-
+	
 	public void setInsertStatement (NamedParameterStatement nps) throws SQLException, ENTException {
 		List<Field> flds = this.getLocalFields(new LinkedList<Field>(), this.getClass(), true);
 		Object fldVal = null;
@@ -119,17 +125,50 @@ public abstract class rdENT<T> extends ENT<T> implements ifDataSrcWrapper {
 	// Set values of prepared statment based on class var values
 
 
-	public abstract void setUpdateStatement(PreparedStatement psUpdateRemoteData) throws SQLException;
+	private String setupNPSInsertQuery() throws SQLException {
+		String q;
+		List<Field> flds = this.getLocalFields(new LinkedList<Field>(), this.getClass(), true);
+		q = "INSERT INTO " + this.nit.NIT_TABLE;
+		q += "(";
+		String fldName;
+		for(Field fld : flds) {
+			q += fld.getName() + ",";
+		}
+		q = q.substring(0,q.lastIndexOf(","));
+		q += ") \n";
+		q += " VALUES (";
+		for(Field fld : flds) {
+			q += ":" + fld.getName() + ",";
+		}
+		q = q.substring(0,q.lastIndexOf(","));
+		q += ");";
+		return q;
+	}
+
+
+	public NamedParameterStatement setupInsertStatement( Connection con) throws SQLException {
+		String q = this.setupNPSInsertQuery();
+		NamedParameterStatement nps = new NamedParameterStatement(con,q);
+		return nps;
+	}
+
+
+	public void setUpdateStatement(PreparedStatement psUpdateRemoteData) throws SQLException{
 	// Set values of prepared statment based on class var values
+	}
 
 
 	public abstract void setExpireAllStatement(PreparedStatement psDeleteRemoteData) throws SQLException;
 	// Expire all local copies of remote data
 
-	public abstract void setCheckRecordStatement(PreparedStatement psSelectRemoteData) throws SQLException;
-	// Check for a local copy of a remote record
+	public void setCheckRecordStatement(PreparedStatement psSelectRemoteData) throws SQLException{
+		// Check for a local copy of a remote record
+	}
+
 
 
 
 
 }
+
+

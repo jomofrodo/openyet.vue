@@ -9,6 +9,5 @@ public interface ifDataSrc {
 
 	public DataFmt getFormat();
 	
-	public if_SRC_ORG getSrcOrganization();
 
 }

@@ -9,9 +9,12 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 
+import com.netazoic.covid.ent.JHTimeSeries.JH_TP;
+import com.netazoic.covid.ent.rdENT.SRC_ORG;
 import com.netazoic.ent.ENTException;
 import com.netazoic.ent.if_TP;
 import com.netazoic.util.NamedParameterStatement;
+import com.netazoic.util.SQLUtil;
 
 public class  CTP_Daily extends rdENT<CTP_Daily> {
 
@@ -47,7 +50,8 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	public Integer deathIncrease;
 	public String dateChecked;
 
-
+	private static String DATA_URL = "https://covidtracking.com/api/states/daily";
+	private DataFmt dataFmt = DataFmt.JSON;
 
 
 	@Override
@@ -58,7 +62,8 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 
 	public enum CTP_TP implements if_TP{
 
-		sql_CREATE_RECORD(null); //Use a NamedParameterStatement
+		sql_CREATE_RECORD(null),  //Use a NamedParameterStatement
+		sql_CREATE_COMBINED_RECS("/Data/sql/CTP/CreateCombinedRecs.sql");
 
 
 		public String tPath;
@@ -81,7 +86,10 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	}
 	public CTP_Daily() throws ENTException {
 		super();
+		this.dataURL = DATA_URL;
+		this.srcOrg = SRC_ORG.CTP;
 		initENT();
+		
 	}
 
 
@@ -104,22 +112,17 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	
 
 	@Override
-	public void setUpdateStatement(PreparedStatement psUpdateRemoteData) throws SQLException {
-		// TODO Auto-generated method stub
-
+	public String getDataURL() {
+		return dataURL;
 	}
 
 	@Override
-	public void setExpireAllStatement(PreparedStatement psDeleteRemoteData) throws SQLException {
-		// TODO Auto-generated method stub
-
+	public Integer createCombinedRecs() throws Exception {
+		HashMap map = new HashMap();
+		String q =  parseUtil.parseQueryFile(CTP_TP.sql_CREATE_COMBINED_RECS.tPath,map);
+		return SQLUtil.execSQL(q, con);
 	}
-
-	@Override
-	public void setCheckRecordStatement(PreparedStatement psSelectRemoteData) throws SQLException {
-		// TODO Auto-generated method stub
-
-	}
+	
 
 	@Override
 	public Long createRecord(HashMap<String, Object> paramMap, Connection con) throws ENTException {
@@ -155,10 +158,11 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 
 
 
+
 	@Override
-	public void setInsertStatement(NamedParameterStatement nps, Connection con) throws SQLException, ENTException {
+	public void setExpireAllStatement(PreparedStatement psDeleteRemoteData) throws SQLException {
 		// TODO Auto-generated method stub
-		
+	
 	}
 
 
@@ -168,6 +172,20 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 		String sql = "DELETE FROM covid.ctp_statesdaily";
 		PreparedStatement psDeleteRemoteData = con.prepareStatement(sql);
 		return psDeleteRemoteData;
+	}
+
+
+
+	@Override
+	public SRC_ORG getSrcOrg() {
+		return this.srcOrg;
+	}
+
+
+
+	@Override
+	public DataFmt getFormat() {
+		return this.dataFmt;
 	}
 		
 

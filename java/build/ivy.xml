@@ -27,8 +27,7 @@
 
     		<dependency org="org.apache.logging.log4j" name="log4j-slf4j-impl" rev="2.13.1" conf="dev->default" /> 
 			<dependency org="org.apache.logging.log4j" name="log4j-1.2-api" rev="2.13.1" conf="dev->default"/>  
-			<dependency org="io.sentry" name="sentry-log4j2" rev="1.7.22"  conf="dev->default" />  
-			
+	
                 
         </dependencies>
 </ivy-module>

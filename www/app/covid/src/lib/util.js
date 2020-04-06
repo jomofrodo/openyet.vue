@@ -14,3 +14,15 @@ export function  getCSVData(url,vm) {
       return recs;
     });
   }
+
+  export function getQueryParam(name) {
+    // eslint-disable-next-line no-useless-escape
+    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+    var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+    var results = regex.exec(window.location.search);
+    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+}
+export function getWindowVal(name) {
+    if (window[name]) return window[name];
+    else return this.getQueryParam(name);
+}

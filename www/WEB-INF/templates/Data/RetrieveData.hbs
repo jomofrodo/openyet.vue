@@ -2,26 +2,44 @@
     <noscript>
       <strong>We're sorry but covid-19 doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
     </noscript>
+    <ul>
+    <li><div>
     Retrieve remote data
     <select name="dataSrc" onChange="getData(this);">
     
-    	<option value="ALL">Get all data</option>
+    	<option value="">-- Select Data Source --</option>
     	<option value="JH_CONF">Get JH confirmed cases time series</option>
     	<option value="JH_DEAD">Get JH new deaths time series</option>
     	<option value="JH_RECOVER">Get JH recovered cases time series</option>
     	<option value="CTP_STATES_DAILY">Get Covid Tracking Project states/daily</option>
     </select>
+    	</div></li>
+    <li> Retrieve ALL remote data: <button onclick="getALLData()">GO</button></li>
+    </ul>
     <!-- built files will be auto injected -->
 {{> _include/footer }}
 
 <script src="/js/vendor/jquery/jquery.min.js"></script>
 <script>
 function getData(el){
+    if(!el.value) return;
     let url ="/cvd/retrieveData?dataSrc=" + el.value;
-    $.get(url).then(function(ret){
-		alert("Data retrieved");
+    $.get(url).then(function(data){
+		let msg;
+		msg = data.toString();
+		alert(msg);
     }).catch(function(err){
-		debugger;
+		alert(err.responseText);
+    });
+}
+
+function getALLData(){
+        let url ="/cvd/retrieveALLData";
+    $.get(url).then(function(data){
+		let msg;
+		msg = data;
+		alert(msg);
+    }).catch(function(err){
 		alert(err.responseText);
     });
 }

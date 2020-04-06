@@ -21,3 +21,6 @@ redux-demo/
 www/js/vendor
 www/js/package-lock.json
 www/app/rwa
+www/app/covid/dist
+runtime
+www/static

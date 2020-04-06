@@ -10,22 +10,25 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.netazoic.covid.ent.CTP_Daily;
-import com.netazoic.covid.ent.JHTimeSeries;
 import com.netazoic.covid.ent.JHTimeSeries.JH_Column;
 import com.netazoic.covid.ent.JHTimeSeries.JH_TimeSeriesType;
+import com.netazoic.covid.ent.JH_Confirmed;
+import com.netazoic.covid.ent.JH_Dead;
+import com.netazoic.covid.ent.JH_Recovered;
 import com.netazoic.covid.ent.RemoteDataObj;
 import com.netazoic.covid.ent.ifDataSrc;
 import com.netazoic.covid.ent.ifDataSrcWrapper;
@@ -33,13 +36,14 @@ import com.netazoic.covid.ent.ifDataType;
 import com.netazoic.covid.ent.ifRemoteDataObj;
 import com.netazoic.covid.ent.rdENT;
 import com.netazoic.covid.ent.rdENT.DataFmt;
+import com.netazoic.covid.ent.rdENT.SRC_ORG;
 import com.netazoic.ent.RouteAction;
 import com.netazoic.ent.ServENT;
-import com.netazoic.ent.if_SRC_ORG;
 import com.netazoic.util.HttpUtil;
 import com.netazoic.util.JSONUtil;
 import com.netazoic.util.JsonObjectIterator;
 import com.netazoic.util.RSObj;
+import com.netazoic.util.SQLUtil;
 
 public class Covid19 extends ServENT {
 
@@ -49,7 +53,7 @@ public class Covid19 extends ServENT {
 	private static final long serialVersionUID = 1L;
 	RouteAction homeHdlr = new HomeHdlr();
 
-	private static Logger logger = LoggerFactory.getLogger(Covid19.class);
+	private static final Logger logger = LogManager.getLogger(Covid19.class);
 
 	//creating enum HOME TemPLate?
 	public  enum CVD_TP{
@@ -57,6 +61,8 @@ public class Covid19 extends ServENT {
 		RetrieveData("/Data/RetrieveData.hbs", "Retrieve Data main page"),
 		READ_ME("README.md","Todos/Redux Read Me"), 
 		sql_GetCombinedData("/Data/sql/GetCombinedData.sql", "Get combined covid19 data"),
+		sql_UpdateCombinedCountryCodes("/Data/sql/UpdateCombinedCountryCodes.sql", "Update country codes in combined"),
+		sql_CreateStateRollups("/Data/sql/CreateStateRollups.sql","Create summary entries for countries that are broken out by state");
 		;
 		//Why store template path and description into variables?
 		String tPath;
@@ -79,6 +85,7 @@ public class Covid19 extends ServENT {
 	public enum CVD_Route{
 		home("/home","Show home page"),
 		retrieveData("/cvd/retrieveData", "Retrieve Data"),
+		retrieveALLData("/cvd/retrieveALLData","Retrieve all remote data"),
 		getCountryData("/cvd/getData/countries", "Get country table"),
 		getCombinedData("/cvd/getData/combined", "Get combined covid19 data")
 		;
@@ -99,64 +106,57 @@ public class Covid19 extends ServENT {
 
 	}
 
-	public enum SRC_ORG implements if_SRC_ORG{
-		JH("Johns Hopkins"),
-		CTP("Covid Tracking Project");
-
-		String code;
-		String srcName;
-
-		SRC_ORG(String n){
-			this.code=this.name();
-			this.srcName = n;
-		}
-
-		@Override
-		public String getCode() {
-			return this.code;
-
-		}
-	}
-
 	public enum CVD_DataSrc  implements ifDataSrc{
-		JH_CONF(SRC_ORG.JH,JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series new Confirmed","csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"),
-		JH_DEAD(SRC_ORG.JH, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series new deaths","csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv"),
-		JH_RECOVER(SRC_ORG.JH, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series new recoveries", "csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv"),
-		CTP_STATES_DAILY(SRC_ORG.CTP, DataFmt.JSON,"Covid Tracking Project - States Daily","https://covidtracking.com/api/states/daily");
+		JH_CONF(JH_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series new Confirmed"),
+		JH_DEAD(JH_Dead.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series new deaths"),
+		JH_RECOVER(JH_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series new recoveries"),
+		CTP_STATES_DAILY( CTP_Daily.class, DataFmt.JSON,"Covid Tracking Project - States Daily");
 
 		String srcCode;
 		ifDataType type;
-		SRC_ORG srcOrg;
 		DataFmt dataFmt;
+		Class<ifDataSrcWrapper> dswClass;
 		String desc;
-		String url;
 		String urlBase = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/";
-		CVD_DataSrc(SRC_ORG o, DataFmt f, String d, String u){
-			this.srcOrg = o;
+		rdENT rdEnt;
+		CVD_DataSrc( Class cl, DataFmt f, String d){
+			this.dswClass = cl;
 			this.dataFmt = f;
 			this.desc = d;
 			this.srcCode = this.name();
-			this.url = u;
+			try {
+				this.rdEnt = (rdENT) cl.newInstance();
+			} catch (InstantiationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
-		CVD_DataSrc(SRC_ORG o,  ifDataType t,DataFmt f, String d, String u) {
+		CVD_DataSrc(Class cl, ifDataType t,DataFmt f, String d) {
 			this.srcCode = this.name();
+			this.dswClass = cl;
 			this.dataFmt = f;
-			this.srcOrg = o;
 			this.type = t;
 			this.desc = d;
-			this.url = this.urlBase + u;
+			try {
+				this.rdEnt = (rdENT) cl.newInstance();
+			} catch (InstantiationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 		public String getURL() {
-			return this.url;
+			return this.rdEnt.getDataURL();
 		}
 		@Override
 		public DataFmt getFormat() {
 			return this.dataFmt;
-		}
-		@Override
-		public if_SRC_ORG getSrcOrganization() {
-			return this.srcOrg;
 		}
 
 	}
@@ -176,6 +176,7 @@ public class Covid19 extends ServENT {
 		defaultRoute = CVD_Route.home.route;
 		routeMap.put(CVD_Route.home.route, homeHdlr);
 		routeMap.put(CVD_Route.retrieveData.route, new RemoteDataHdlr());
+		routeMap.put(CVD_Route.retrieveALLData.route, new RetrieveAllDataHdlr());
 		routeMap.put(CVD_Route.getCountryData.route, getData);
 		routeMap.put(CVD_Route.getCombinedData.route, getData);
 
@@ -314,23 +315,23 @@ public class Covid19 extends ServENT {
 		return msg;
 	}
 
-	public Map<CVD_DataCt,MutableInt> retrieveRemoteData(ifDataSrcWrapper dsw, ifRemoteDataObj rmdObj, Connection con) throws IOException, Exception, SQLException{
+	public Map<String,Integer> retrieveRemoteData(ifDataSrcWrapper dsw, ifRemoteDataObj rmdObj, Connection con) throws IOException, Exception, SQLException{
 
 		boolean flgAutoCommitAsIFoundIt = con.getAutoCommit();
-		Map<CVD_DataCt,MutableInt> retMap = new HashMap<CVD_DataCt,MutableInt>();
+		Map<CVD_DataCt,MutableInt> ctMap = new HashMap<CVD_DataCt,MutableInt>();
+		Map<String, Integer> retMap = new HashMap<String, Integer>();
 		Savepoint savePt;
 		//		Integer ctRemoteDataRecs = 0, ctReturningRemoteData=0, ctUpdatedRemoteData=0, ctNewRemoteData=0, ctBadRecords=0;
-		retMap.put(CVD_DataCt.ctRemoteDataRecs, new MutableInt());
-		retMap.put(CVD_DataCt.ctNewRemoteData, new MutableInt());
-		retMap.put(CVD_DataCt.ctBadRecords, new MutableInt());
-		MutableInt ctNewRemoteData = retMap.get(CVD_DataCt.ctNewRemoteData);
-		MutableInt ctBadRecords = retMap.get(CVD_DataCt.ctBadRecords);
-		MutableInt ctRemoteDataRecs = retMap.get(CVD_DataCt.ctRemoteDataRecs);
+		ctMap.put(CVD_DataCt.ctRemoteDataRecs, new MutableInt());
+		ctMap.put(CVD_DataCt.ctNewRemoteData, new MutableInt());
+		ctMap.put(CVD_DataCt.ctBadRecords, new MutableInt());
+		MutableInt ctNewRemoteData = ctMap.get(CVD_DataCt.ctNewRemoteData);
+		MutableInt ctBadRecords = ctMap.get(CVD_DataCt.ctBadRecords);
+		MutableInt ctRemoteDataRecs = ctMap.get(CVD_DataCt.ctRemoteDataRecs);
 		HashMap<String,Object> recMap;
 
-		ifDataSrc dataSrc = dsw.getSrc();
-		String fqdn = dataSrc.getURL();
-		DataFmt dataFmt = dataSrc.getFormat();
+		String fqdn = dsw.getDataURL();
+		DataFmt dataFmt = dsw.getFormat();
 		try{
 
 			HttpURLConnection http = HttpUtil.getRemoteHTTPConn(fqdn, flgDebug);
@@ -350,7 +351,7 @@ public class Covid19 extends ServENT {
 			//And now parse the stream
 
 			// CSV data
-			SRC_ORG srcOrg = (SRC_ORG) dataSrc.getSrcOrganization();
+			SRC_ORG srcOrg = (SRC_ORG) dsw.getSrcOrg();
 
 			switch(srcOrg) {
 			case JH:
@@ -380,11 +381,27 @@ public class Covid19 extends ServENT {
 
 			shutDown();
 		}
-		retMap.put(CVD_DataCt.ctRemoteDataRecs, ctRemoteDataRecs);
-		retMap.put(CVD_DataCt.ctNewRemoteData, ctNewRemoteData);
-		retMap.put(CVD_DataCt.ctBadRecords, ctBadRecords);
-		if(ctRemoteDataRecs.value > 0) reportImportStats(retMap);
+		ctMap.put(CVD_DataCt.ctRemoteDataRecs, ctRemoteDataRecs);
+		ctMap.put(CVD_DataCt.ctNewRemoteData, ctNewRemoteData);
+		ctMap.put(CVD_DataCt.ctBadRecords, ctBadRecords);
+		if(ctRemoteDataRecs.value > 0) reportImportStats(ctMap);
+
+		Set<CVD_DataCt> cts = 		ctMap.keySet();
+		for(CVD_DataCt ct : cts) {
+			retMap.put(ct.name(), ctMap.get(ct).value);
+		}
+
 		return retMap;
+	}
+
+	private void updateCombinedData(RemoteDataObj rdo, Connection con) throws Exception {
+		rdo.createCombinedData();
+		
+		String tp = CVD_TP.sql_UpdateCombinedCountryCodes.tPath;
+		String q = parseQuery(tp);
+		SQLUtil.execSQL(q, con);
+		
+
 	}
 
 	private void shutDown(){
@@ -396,6 +413,38 @@ public class Covid19 extends ServENT {
         if(updateRemoteData!=null) try{updateRemoteData.close();updateRemoteData=null;}catch(Exception ex){}
 		 */
 	}
+
+	public class GetDataHdlr extends RouteEO{
+		// Retrieve and return data from application DB
+		@Override
+		public void routeAction(HttpServletRequest request,
+				HttpServletResponse response, Connection con, HttpSession session)
+						throws IOException, Exception {
+			String routeString = getRoutePrimary(request);
+			String q, tp,json;
+			RSObj rso;
+			
+			
+			CVD_Route rte = CVD_Route.getRoute(routeString);
+			switch(rte) {
+			case getCountryData:
+				q = "SELECT countrycode, name FROM country WHERE region != '' AND region is not null ORDER BY name";
+
+				break;
+			case getCombinedData:
+				tp = CVD_TP.sql_GetCombinedData.tPath;
+				q  = parser.parseQuery(tp,requestMap);
+				break;
+			default:
+				throw new Exception("Could not determine the requested data");
+			}
+
+			rso = RSObj.getRSObj(q, "countrycode", con);
+			json = JSONUtil.toJSON(rso.items);
+			ajaxResponse(json,response);
+		}
+	}
+	
 
 	public class HomeHdlr extends RouteEO{
 
@@ -415,29 +464,37 @@ public class Covid19 extends ServENT {
 		public void routeAction(HttpServletRequest request,
 				HttpServletResponse response, Connection con, HttpSession session)
 						throws IOException, Exception {
-
+			boolean flgDebug = true;
 			String dataSrc = (String) request.getAttribute(CVD_Param.dataSrc.name());
 			HashMap<String,Object> map = new HashMap();
 			if(dataSrc!=null) {
 				CVD_DataSrc src = CVD_DataSrc.valueOf(dataSrc);
-				rdENT dsw = null;
-				switch(src.srcOrg) {
+				rdENT rdEnt = src.rdEnt;
+				switch(src.rdEnt.srcOrg) {
 				case JH:
-
-					dsw = new JHTimeSeries();
-					dsw.setSrc(src);
-					dsw.setType(src.type);
+					rdEnt.setSrc(src);
+					rdEnt.setType(src.type);
 					break;
 				case CTP:
-					dsw = new CTP_Daily();
-					dsw.setSrc(src);
+					rdEnt = new CTP_Daily();
+					rdEnt.setSrc(src);
 					break;
 
 				}
-				RemoteDataObj rdo = getRDO(dsw, con);
+				RemoteDataObj rdo = getRDO(rdEnt, con);
+				con.setAutoCommit(false);
+				logger.info("Starting retrieval of remote data");
 				rdo.expireAllRemoteDataRecords(map);
-
-				Map<CVD_DataCt,MutableInt> retMap = retrieveRemoteData(dsw, rdo, con);
+				logger.info("Expired remote records");
+				Map<String,Integer> retMap = new HashMap<String,Integer>();
+				retMap = retrieveRemoteData(rdEnt, rdo, con);
+				updateCombinedData(rdo,con);
+				con.setAutoCommit(true);
+				logger.info("Finished with remote data retrieval");
+				retMap.put("ctNewRecords", 100000);
+				String json = JSONUtil.toJSON(retMap);
+				ajaxResponse(json, response);
+				return;
 			}
 			String tp = CVD_TP.RetrieveData.tPath;
 
@@ -446,36 +503,29 @@ public class Covid19 extends ServENT {
 
 	}
 
-	public class GetDataHdlr extends RouteEO{
-		// Retrieve and return data from application DB
+	public class RetrieveAllDataHdlr extends RouteEO{
+
 		@Override
 		public void routeAction(HttpServletRequest request,
 				HttpServletResponse response, Connection con, HttpSession session)
 						throws IOException, Exception {
-			String routeString = getRoutePrimary(request);
-			String q, tp,json;
-			RSObj rso;
-			CVD_Route rte = CVD_Route.getRoute(routeString);
-			switch(rte) {
-			case getCountryData:
-				q = "SELECT countrycode, name FROM country ORDER BY name";
-
-				break;
-			case getCombinedData:
-				tp = CVD_TP.sql_GetCombinedData.tPath;
-				q  = parseQuery(tp);
-				break;
-			default:
-				throw new Exception("Could not determine the requested data");
+			HashMap<String,Object> map = new HashMap<String,Object>();
+			logger.info("Starting retrieval of all data.");
+			for(CVD_DataSrc src : CVD_DataSrc.values()) {
+				RemoteDataObj rdo = getRDO(src.rdEnt,con);
+				rdo.expireAllRemoteDataRecords(map);
+				logger.info("Expired remote records");
+				Map<String,Integer> retMap = new HashMap<String,Integer>();
+				retMap = retrieveRemoteData(src.rdEnt, rdo, con);
+				updateCombinedData(rdo,con);
+				logger.info("Finished with import for: " + src.desc);
 			}
-
-			rso = RSObj.getRSObj(q, "countrycode", con);
-			json = JSONUtil.toJSON(rso.items);
-			ajaxResponse(json,response);
-		}
+			
+			map.put("all", "done");
+			String json = JSONUtil.toJSON(map);
+			ajaxResponse(json, response);
+		}	
 	}
-
-
 
 
 }

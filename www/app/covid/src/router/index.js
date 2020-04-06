@@ -25,6 +25,11 @@ export default new Router({
       path: "/nations",
       name: "nations",
       component: () => import("@/views/Nations")
+    },
+    {
+      path: "/grid/combined",
+      name: "combined-grid",
+      component: () => import("@/views/CombinedGrid")
     }
     
   ]
