@@ -24,7 +24,8 @@ module.exports = function (grunt) {
 				files: {
 					'polyfill':			'@babel/polyfill/dist',
 					'jquery': 				'jquery/dist/*.js',
-					'lodash':				'lodash/lodash*.js'
+					'lodash':				'lodash/lodash*.js',
+					'bootstrap':			'bootstrap/dist/css/*.min.css'
 
 				}
 			}

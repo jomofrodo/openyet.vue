@@ -10,9 +10,10 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.netazoic.covid.ent.JHTimeSeries.JH_TP;
-import com.netazoic.covid.ent.rdENT.SRC_ORG;
 import com.netazoic.ent.ENTException;
 import com.netazoic.ent.if_TP;
+import com.netazoic.ent.rdENT;
+import com.netazoic.ent.rdENT.SRC_ORG;
 import com.netazoic.util.NamedParameterStatement;
 import com.netazoic.util.SQLUtil;
 

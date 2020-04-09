@@ -1,7 +1,7 @@
 package com.netazoic.covid.ent;
 
-import com.netazoic.covid.ent.rdENT.DataFmt;
 import com.netazoic.ent.if_SRC_ORG;
+import com.netazoic.ent.rdENT.DataFmt;
 
 public interface ifDataSrc {
 	

@@ -1,6 +1,7 @@
 <template>
   <div id="app">
     <div id="asyncticator-mount"></div>
+    <div><h2>Combined Data Grid -- National Time Series</h2></div>
     <div id="div-controls">
       <div class="control">
         <i class="fa-circle" :class="{'fas':flgDirty,'far':!flgDirty,'alert-el':flgDirty}" />&nbsp;
@@ -14,6 +15,7 @@
       :dataURL="dataURL"
       :pDefaultRec="defaultRec"
       :p-filter="searchQuery"
+      :readOnly=flgReadOnly
       @update="onUpdateGridVal"
       @saveGrid="flgDirty=false"
       @noteUpdate="flgDirty=true"
@@ -64,6 +66,7 @@ export default {
     return {
       searchQuery: "",
       colDefs: [],
+      flgReadOnly: true,
       gridDefaults: [],
       gridOptions: [],
       gridCode: "COMBINED",
@@ -199,7 +202,7 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: left;
   color: #2c3e50;
-  margin-top: 60px;
+  margin-top: 10px;
   margin-left: 30px;
 }
 div#div-controls {

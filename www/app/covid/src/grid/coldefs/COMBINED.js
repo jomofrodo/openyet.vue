@@ -18,7 +18,7 @@ export const colDefs = [
     { colName: "deathincrease", header: "Death increase", type:"integer" },
     { colName: "recovered", header: "Recovered", type:"integer" },
     { colName: "recoveredincrease", header: "Recovered increase", type:"integer" },
-    { colName: "datechecked", header: "String date"},
+    { colName: "datechecked", header: "String date", hidden: true},
     { colName: "date", header: "Date"},
     { colName: "sourcecode", header: "Source" }
 

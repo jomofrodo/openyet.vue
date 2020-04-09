@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Savepoint;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -17,8 +19,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
@@ -26,24 +28,26 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.netazoic.covid.ent.CTP_Daily;
 import com.netazoic.covid.ent.JHTimeSeries.JH_Column;
 import com.netazoic.covid.ent.JHTimeSeries.JH_TimeSeriesType;
-import com.netazoic.covid.ent.JH_Confirmed;
-import com.netazoic.covid.ent.JH_Dead;
-import com.netazoic.covid.ent.JH_Recovered;
-import com.netazoic.covid.ent.RemoteDataObj;
+import com.netazoic.covid.ent.JH_Global_Deaths;
+import com.netazoic.covid.ent.JH_Global_Recovered;
+import com.netazoic.covid.ent.JH_US_Confirmed;
+import com.netazoic.covid.ent.JH_US_Deaths;
+import com.netazoic.covid.ent.JH_US_Recovered;
 import com.netazoic.covid.ent.ifDataSrc;
 import com.netazoic.covid.ent.ifDataSrcWrapper;
 import com.netazoic.covid.ent.ifDataType;
-import com.netazoic.covid.ent.ifRemoteDataObj;
-import com.netazoic.covid.ent.rdENT;
-import com.netazoic.covid.ent.rdENT.DataFmt;
-import com.netazoic.covid.ent.rdENT.SRC_ORG;
 import com.netazoic.ent.RouteAction;
 import com.netazoic.ent.ServENT;
+import com.netazoic.ent.rdENT;
+import com.netazoic.ent.rdENT.DataFmt;
+import com.netazoic.ent.rdENT.SRC_ORG;
 import com.netazoic.util.HttpUtil;
 import com.netazoic.util.JSONUtil;
 import com.netazoic.util.JsonObjectIterator;
 import com.netazoic.util.RSObj;
+import com.netazoic.util.RemoteDataObj;
 import com.netazoic.util.SQLUtil;
+import com.netazoic.util.ifRemoteDataObj;
 
 public class Covid19 extends ServENT {
 
@@ -107,9 +111,12 @@ public class Covid19 extends ServENT {
 	}
 
 	public enum CVD_DataSrc  implements ifDataSrc{
-		JH_CONF(JH_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series new Confirmed"),
-		JH_DEAD(JH_Dead.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series new deaths"),
-		JH_RECOVER(JH_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series new recoveries"),
+		JH_GLBL_CONF(JH_US_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series new Confirmed"),
+		JH_GLBL_DEATHS(JH_Global_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series new deaths"),
+		JH_GLBL_RECOVER(JH_Global_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series new recoveries"),
+		JH_US_CONF(JH_US_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series US new Confirmed"),
+		JH_US_DEATHS(JH_US_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series US new deaths"),
+		//		JH_US_RECOVER(JH_US_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series US new recoveries"),
 		CTP_STATES_DAILY( CTP_Daily.class, DataFmt.JSON,"Covid Tracking Project - States Daily");
 
 		String srcCode;
@@ -396,11 +403,11 @@ public class Covid19 extends ServENT {
 
 	private void updateCombinedData(RemoteDataObj rdo, Connection con) throws Exception {
 		rdo.createCombinedData();
-		
+
 		String tp = CVD_TP.sql_UpdateCombinedCountryCodes.tPath;
 		String q = parseQuery(tp);
 		SQLUtil.execSQL(q, con);
-		
+
 
 	}
 
@@ -423,28 +430,43 @@ public class Covid19 extends ServENT {
 			String routeString = getRoutePrimary(request);
 			String q, tp,json;
 			RSObj rso;
-			
-			
-			CVD_Route rte = CVD_Route.getRoute(routeString);
-			switch(rte) {
-			case getCountryData:
-				q = "SELECT countrycode, name FROM country WHERE region != '' AND region is not null ORDER BY name";
+			Statement stat = null;
+			try {
 
-				break;
-			case getCombinedData:
-				tp = CVD_TP.sql_GetCombinedData.tPath;
-				q  = parser.parseQuery(tp,requestMap);
-				break;
-			default:
-				throw new Exception("Could not determine the requested data");
+				CVD_Route rte = CVD_Route.getRoute(routeString);
+				switch(rte) {
+				case getCountryData:
+					q = "SELECT countrycode, name FROM country WHERE region != '' AND region is not null ORDER BY name";
+					rso = RSObj.getRSObj(q, "countrycode", con);
+					break;
+				case getCombinedData:
+					tp = CVD_TP.sql_GetCombinedData.tPath;
+					q  = parser.parseQuery(tp,requestMap);
+					rso = RSObj.getRSObj(q, "countrycode", con);
+					int limitIdx = q.lastIndexOf("LIMIT");
+					if(limitIdx > 0) q = q.substring(0, limitIdx);
+					q = "SELECT COUNT(country) as ct FROM (" + q + ")vc";
+					stat = con.createStatement();
+					ResultSet rs   = SQLUtil.execSQL(q, stat);
+					rs.next();
+					int ct = rs.getInt(1);
+					rso.numRows = ct;
+					break;
+				default:
+					throw new Exception("Could not determine the requested data");
+				}
+
+//				json = JSONUtil.toJSON(rso.items);
+				json = JSONUtil.toJSON(rso);
+				ajaxResponse(json,response);
+			}catch(Exception ex) {
+				throw ex;
+			}finally {
+				if(stat!=null)try {stat.close(); stat = null;}catch(Exception ex) {}
 			}
-
-			rso = RSObj.getRSObj(q, "countrycode", con);
-			json = JSONUtil.toJSON(rso.items);
-			ajaxResponse(json,response);
 		}
 	}
-	
+
 
 	public class HomeHdlr extends RouteEO{
 
@@ -520,7 +542,7 @@ public class Covid19 extends ServENT {
 				updateCombinedData(rdo,con);
 				logger.info("Finished with import for: " + src.desc);
 			}
-			
+
 			map.put("all", "done");
 			String json = JSONUtil.toJSON(map);
 			ajaxResponse(json, response);

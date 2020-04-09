@@ -7,9 +7,10 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.HashMap;
 
-import com.netazoic.covid.ent.rdENT.DataFmt;
 import com.netazoic.ent.ENTException;
 import com.netazoic.ent.if_TP;
+import com.netazoic.ent.rdENT;
+import com.netazoic.ent.rdENT.DataFmt;
 import com.netazoic.util.NamedParameterStatement;
 import com.netazoic.util.SQLUtil;
 

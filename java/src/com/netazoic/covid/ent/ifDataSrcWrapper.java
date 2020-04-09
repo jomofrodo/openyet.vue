@@ -7,9 +7,9 @@ import java.sql.SQLException;
 import java.util.HashMap;
 
 import com.netazoic.covid.Covid19.CVD_DataSrc;
-import com.netazoic.covid.ent.rdENT.DataFmt;
-import com.netazoic.covid.ent.rdENT.SRC_ORG;
 import com.netazoic.ent.ENTException;
+import com.netazoic.ent.rdENT.DataFmt;
+import com.netazoic.ent.rdENT.SRC_ORG;
 import com.netazoic.util.NamedParameterStatement;
 
 public interface ifDataSrcWrapper {

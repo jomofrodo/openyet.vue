@@ -1,9 +1,9 @@
 package com.netazoic.covid.ent;
 
-import com.netazoic.covid.ent.rdENT.SRC_ORG;
 import com.netazoic.ent.ENTException;
+import com.netazoic.ent.rdENT.SRC_ORG;
 
-public class JH_Dead extends JHTimeSeries {
+public class JH_Global_Deaths extends JHTimeSeries {
 	
 	public String state;
 	public String country;
@@ -16,7 +16,7 @@ public class JH_Dead extends JHTimeSeries {
 	private static String DATA_URL = "csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv";
 	private static String urlBase = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/";
 
-	public JH_Dead() throws ENTException {
+	public JH_Global_Deaths() throws ENTException {
 
 		super();
 		this.dataURL = urlBase + DATA_URL;
