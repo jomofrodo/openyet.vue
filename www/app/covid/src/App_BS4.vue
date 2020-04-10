@@ -1,0 +1,50 @@
+<template>
+<body class="container-fluid d-flex flex-column grow">
+    <div class="row">
+        <aside  class="col-2  order-md-1" :class="{'col-md-1':flgSidebar,'col-md-0':!flgSidebar}">
+            <transition>
+            <div v-if="flgSidebar">Sidebar</div>
+            </transition>
+        </aside>
+        <header class="col-10 col-md-12 order-md-0">
+            <Header/>
+        </header> 
+        <div class="col-12  order-last main"  :class="{'col-md-11':flgSidebar,'col-md-12':!flgSidebar}">
+            <div><input type="checkbox" v-model="flgSidebar"/></div>
+            <router-view></router-view>
+        </div>
+
+    </div>
+    <footer><Footer/></footer>
+</body>
+
+</template>
+
+<script>
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+
+export default {
+  name: "netazoic-covid19",
+  components: {
+    Header,
+    Footer
+  },
+  data(){
+    return{
+      flgSidebar: true
+    }
+  }
+};
+</script>
+
+<style>
+/* get the main container to fill height */
+.grow {
+    flex: 1;
+}/* scroll the content area as needed */
+.main {
+    overflow-y: auto;
+    min-height: 40rem;
+}
+</style>

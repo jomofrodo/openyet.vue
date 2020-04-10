@@ -22,13 +22,17 @@ SELECT state,
 {{#unless states}}
 AND (state is null OR state = '')
 {{/unless}}
+{{#if countrycode}}
+AND countrycode = '{{countrycode}}'
+{{/if}}
 {{#if filterKey}}
 AND ((countrycode LIKE '{{filterKey}}')
 	 OR (country LIKE '%{{filterKey}}%')
 	 OR (sourcecode LIKE '{{filterKey}}')
+	 OR (state LIKE '{{filterKey}}')
 	 )
 {{/if}}
-ORDER BY country, state, dateSort, sourcecode
+ORDER BY country, state, dateSort DESC, sourcecode
 {{#if limit}}
 LIMIT {{limit}}
 {{/if}}

@@ -1,11 +1,27 @@
 <template>
   <div id="app">
+
     <div id="asyncticator-mount"></div>
-    <div><h2>Combined Data Grid -- National Time Series</h2></div>
+    <div>
+      <h3>Combined Data Grid</h3>
+    </div>
     <div id="div-controls">
       <div class="control">
         <i class="fa-circle" :class="{'fas':flgDirty,'far':!flgDirty,'alert-el':flgDirty}" />&nbsp;
         <label>Grid updated</label>
+      </div>
+      <div class="control">
+        <column-selector :colDefs="colDefs" />
+      </div>
+      <div class="control" id="cc" >
+            <v-autocomplete
+              v-model="filter.country"
+              :items="countries"
+              item-text="name"
+              item-value="countrycode"
+              hint="Select a country"
+              return-object
+            ></v-autocomplete>
       </div>
     </div>
     <njs-grid
@@ -15,7 +31,7 @@
       :dataURL="dataURL"
       :pDefaultRec="defaultRec"
       :p-filter="searchQuery"
-      :readOnly=flgReadOnly
+      :readOnly="flgReadOnly"
       @update="onUpdateGridVal"
       @saveGrid="flgDirty=false"
       @noteUpdate="flgDirty=true"
@@ -34,6 +50,7 @@
     >
       <div v-html="alertMsg"></div>
     </jo-modal>
+
   </div>
 </template>
 
@@ -44,7 +61,10 @@ import Vue from "vue";
 // import { njsGrid } from "./njsGrid/src/index.js"; // as a git subModule
 import njsGrid from "../njsGrid/src/njsGrid.vue"; // local src
 import joModal from "../components/joModal.vue";
+import ColumnSelector from "../components/ColumnSelector.vue";
+import CountryComplete from '../components/CountryComplete.vue';
 import * as commonOptions from "../grid/common-options";
+import * as util from "../lib/util.js";
 
 // Font Awesome
 // Use a standard CDN load on the page that mounts the grid
@@ -59,13 +79,19 @@ export default {
   name: "CombinedGrid",
   components: {
     "njs-grid": njsGrid,
-    joModal
+    joModal,
+    "column-selector": ColumnSelector
   },
   props: [],
   data: function() {
     return {
+      country: "",
       searchQuery: "",
       colDefs: [],
+      countries: [],
+      filter: {
+        country: null
+      },
       flgReadOnly: true,
       gridDefaults: [],
       gridOptions: [],
@@ -75,19 +101,51 @@ export default {
       dlgs: {
         dlgAlert: { id: "dlgAlert", flg: false }
       },
+      urlCountries: "cvd/getData/countries",
       urlData: "cvd/getData/combined?limit=1000",
       reloadIdx: 1,
       alertMsg: "",
       infoMsg: "msg"
     };
   },
+  watch:{
+    country(newVal){
+      debugger;
+      console.log(newVal);
+    }
+  },
   mounted() {},
   created() {
+    const vm = this;
     this.initGrid();
+    const jsonStr = window.localStorage.getItem("countries.json");
+    //DEBUG
+    if (false) vm.countries = JSON.parse(jsonStr);
+    else {
+      util
+        .getData(vm.urlCountries, vm)
+        .then(rso => {
+          // Write data to local storage'
+          const recs = rso.items;
+          window.localStorage.setItem("countries.json", JSON.stringify(recs));
+          vm.countries = recs;
+        })
+        .catch(err => alert(err));
+    }
   },
   computed: {
     dataURL() {
-      return this.urlData;
+      let url = this.urlData;
+      // check if state column is displayed
+      const colState = this.colDefs.find(function(col) {
+        return col.colName == "state";
+      });
+      if (!colState.hidden) url += "&states=true";
+      // Add a country if selected
+      if (this.filter.country) {
+        url += "&countrycode=" + this.filter.country.countrycode;
+      }
+      return url;
     },
     defaultRec() {
       let rec = {};
@@ -101,6 +159,13 @@ export default {
     }
   },
   watch: {
+    country(newVal) {
+      this.filter.country = null;
+      const country = this.countries.find(c => {
+        return c.name == newVal;
+      });
+      if (country) this.filter.country = country;
+    },
     colDefs(newVal) {
       if (!newVal) return;
       const vm = this;
@@ -133,8 +198,9 @@ export default {
     async initGrid() {
       const vm = this;
       try {
-        this.gridOptions =
-          require("../grid/coldefs/" + this.gridCode + "_options");
+        this.gridOptions = require("../grid/coldefs/" +
+          this.gridCode +
+          "_options");
       } catch (err) {
         this.gridOptions = [];
         // no options for this grid
@@ -149,6 +215,8 @@ export default {
         }
         if (!c.required && !c.headerClasses && c.editor !== null)
           Vue.set(c, "headerClasses", "optional");
+        //Set 'isVisible' flags
+        Vue.set(c, "isVisible", !c.hidden);
       });
     },
     initOpts() {

@@ -1,5 +1,16 @@
 <template>
   <nav class="navbar navbar-light">
+          <div class="nav-root">
+            <ul class="nav nav-pills outline-active">
+              <li class="nav-item">
+                <router-link 
+                  :to="{ name: 'home'}"
+                  class="nav-link"
+                  active-class="active">
+                  Home</router-link>
+              </li>
+            </ul>
+          </div>
           <div class="feed-toggle">
             <ul class="nav nav-pills outline-active">
               <li class="nav-item">

@@ -1,4 +1,4 @@
-{{> _include/header }}
+{{> _include/header2 }}
  
     <div style="float:left;clear:all">
     <ul>
@@ -36,10 +36,12 @@ function getData(el){
 function getALLData(){
         let url ="/cvd/retrieveALLData";
     $.get(url).then(function(data){
+		debugger;
 		let msg;
 		msg = data;
 		alert(msg);
     }).catch(function(err){
+		debugger;
 		alert(err.responseText);
     });
 }

@@ -167,6 +167,10 @@ public class Covid19 extends ServENT {
 		}
 
 	}
+	
+	public Covid19(){
+		this.flgDebug = true;
+	}
 
 	class MutableInt {
 		int value = 0; // 
@@ -323,7 +327,7 @@ public class Covid19 extends ServENT {
 	}
 
 	public Map<String,Integer> retrieveRemoteData(ifDataSrcWrapper dsw, ifRemoteDataObj rmdObj, Connection con) throws IOException, Exception, SQLException{
-
+		boolean flgLocalDebug = false;
 		boolean flgAutoCommitAsIFoundIt = con.getAutoCommit();
 		Map<CVD_DataCt,MutableInt> ctMap = new HashMap<CVD_DataCt,MutableInt>();
 		Map<String, Integer> retMap = new HashMap<String, Integer>();
@@ -345,7 +349,7 @@ public class Covid19 extends ServENT {
 
 			InputStream is = http.getInputStream();
 
-			if(flgDebug){
+			if(flgLocalDebug){
 				//This will kill the input stream for any further processing
 				System.out.print(HttpUtil.getResponseString(is));
 			}
@@ -456,7 +460,7 @@ public class Covid19 extends ServENT {
 					throw new Exception("Could not determine the requested data");
 				}
 
-//				json = JSONUtil.toJSON(rso.items);
+				//				json = JSONUtil.toJSON(rso.items);
 				json = JSONUtil.toJSON(rso);
 				ajaxResponse(json,response);
 			}catch(Exception ex) {
@@ -533,19 +537,27 @@ public class Covid19 extends ServENT {
 						throws IOException, Exception {
 			HashMap<String,Object> map = new HashMap<String,Object>();
 			logger.info("Starting retrieval of all data.");
-			for(CVD_DataSrc src : CVD_DataSrc.values()) {
-				RemoteDataObj rdo = getRDO(src.rdEnt,con);
-				rdo.expireAllRemoteDataRecords(map);
-				logger.info("Expired remote records");
-				Map<String,Integer> retMap = new HashMap<String,Integer>();
-				retMap = retrieveRemoteData(src.rdEnt, rdo, con);
-				updateCombinedData(rdo,con);
-				logger.info("Finished with import for: " + src.desc);
-			}
 
-			map.put("all", "done");
-			String json = JSONUtil.toJSON(map);
-			ajaxResponse(json, response);
+			try {
+				for(CVD_DataSrc src : CVD_DataSrc.values()) {
+					RemoteDataObj rdo = getRDO(src.rdEnt,con);
+					rdo.expireAllRemoteDataRecords(map);
+					logger.info("Expired remote records");
+					Map<String,Integer> retMap = new HashMap<String,Integer>();
+					retMap = retrieveRemoteData(src.rdEnt, rdo, con);
+					updateCombinedData(rdo,con);
+					logger.info("Finished with import for: " + src.desc);
+				}
+
+				map.put("all", "done");
+				String json = JSONUtil.toJSON(map);
+				ajaxResponse(json, response);
+			}catch(Exception ex) {
+				String msg = ex.toString();
+				msg += ":" + ex.getMessage();
+				ajaxError(msg, ex, response);
+				logger.error(msg);
+			}
 		}	
 	}
 

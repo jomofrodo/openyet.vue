@@ -4,23 +4,23 @@ const optsPoolCode = [{ value: 'TEST_POOL_A', label: 'TEST_POOL_A' },
 
 export const colDefs = [
     { colName: "state", header: "State" , hidden:true },
-    { colName: "countrycode", header: "CountryCode" },
-    { colName: "country", header: "Country"  },
-    { colName: "positive", header: "Confirmed", type:"integer" },
+    { colName: "countrycode", header: "CountryCode", hidden:false },
+    { colName: "country", header: "Country", hidden:false  },
+    { colName: "positive", header: "Confirmed", type:"integer", hidden:false },
     { colName: "positiveincrease", header: "+ increase", type:"integer", hidden: true },
-    { colName: "negative", header: "Negatives" , type:"integer"},
+    { colName: "negative", header: "Negatives" , type:"integer", hidden:false},
     { colName: "negativeincrease",header: "- increase", type: "integer", hidden: true},
     { colName: "totaltestresults", header: "Total # Tests", type:"integer", hidden:true },
     { colName: "totaltestresultsincrease", header: "Test # increase", type:"integer", hidden: true },
     { colName: "hospitalized", header: "Hospitalized", type:"integer", hidden: true },
     { colName: "hospitalizedincrease", header: "Hospitalized increase", type:"integer", hidden: true },
-    { colName: "death", header: "Dead", type:"integer" },
-    { colName: "deathincrease", header: "Death increase", type:"integer" },
-    { colName: "recovered", header: "Recovered", type:"integer" },
-    { colName: "recoveredincrease", header: "Recovered increase", type:"integer" },
+    { colName: "death", header: "Deaths", type:"integer", hidden:false },
+    { colName: "deathincrease", header: "Death increase", type:"integer", hidden:false },
+    { colName: "recovered", header: "Recovered", type:"integer", hidden:false },
+    { colName: "recoveredincrease", header: "Recovered increase", type:"integer", hidden:false },
     { colName: "datechecked", header: "String date", hidden: true},
-    { colName: "date", header: "Date"},
-    { colName: "sourcecode", header: "Source" }
+    { colName: "date", header: "Date", hidden:false},
+    { colName: "sourcecode", header: "Source", hidden:false }
 
 ]
 
