@@ -13,15 +13,16 @@
       <div class="control">
         <column-selector :colDefs="colDefs" />
       </div>
-      <div class="control" id="cc" >
-            <v-autocomplete
+      <div class="control" style="width:20rem" id="cc" >
+            <vue-select
+              :options="countries"
               v-model="filter.country"
-              :items="countries"
-              item-text="name"
-              item-value="countrycode"
-              hint="Select a country"
-              return-object
-            ></v-autocomplete>
+              placeholder="Select a country"
+              label="name"
+              class="vs__search"
+              style="width:100%"
+            ></vue-select>
+ 
       </div>
     </div>
     <njs-grid
@@ -62,7 +63,7 @@ import Vue from "vue";
 import njsGrid from "../njsGrid/src/njsGrid.vue"; // local src
 import joModal from "../components/joModal.vue";
 import ColumnSelector from "../components/ColumnSelector.vue";
-import CountryComplete from '../components/CountryComplete.vue';
+import vueSelect from 'vue-select';
 import * as commonOptions from "../grid/common-options";
 import * as util from "../lib/util.js";
 
@@ -80,7 +81,8 @@ export default {
   components: {
     "njs-grid": njsGrid,
     joModal,
-    "column-selector": ColumnSelector
+    "column-selector": ColumnSelector,
+    "vue-select": vueSelect
   },
   props: [],
   data: function() {
@@ -107,12 +109,6 @@ export default {
       alertMsg: "",
       infoMsg: "msg"
     };
-  },
-  watch:{
-    country(newVal){
-      debugger;
-      console.log(newVal);
-    }
   },
   mounted() {},
   created() {

@@ -35,6 +35,8 @@ import com.netazoic.covid.ent.JH_US_Deaths;
 import com.netazoic.covid.ent.JH_US_Recovered;
 import com.netazoic.covid.ent.ifDataSrc;
 import com.netazoic.covid.ent.ifDataSrcWrapper;
+import com.netazoic.covid.ent.ifDataSrcWrapper.MutableInt;
+import com.netazoic.covid.ent.ifDataSrcWrapper.RemoteDataRecordCtr;
 import com.netazoic.covid.ent.ifDataType;
 import com.netazoic.ent.RouteAction;
 import com.netazoic.ent.ServENT;
@@ -66,7 +68,8 @@ public class Covid19 extends ServENT {
 		READ_ME("README.md","Todos/Redux Read Me"), 
 		sql_GetCombinedData("/Data/sql/GetCombinedData.sql", "Get combined covid19 data"),
 		sql_UpdateCombinedCountryCodes("/Data/sql/UpdateCombinedCountryCodes.sql", "Update country codes in combined"),
-		sql_CreateStateRollups("/Data/sql/CreateStateRollups.sql","Create summary entries for countries that are broken out by state");
+		sql_CreateStateRollups("/Data/sql/CreateStateRollups.sql","Create summary entries for countries that are broken out by state"),
+		sql_GetCountries("/Data/sql/GetCountryList.sql","Select list of countries with countrycodes");
 		;
 		//Why store template path and description into variables?
 		String tPath;
@@ -172,12 +175,7 @@ public class Covid19 extends ServENT {
 		this.flgDebug = true;
 	}
 
-	class MutableInt {
-		int value = 0; // 
-		public void increment () { ++value;      }
-		public void decrement () { --value; }
-		public int  get ()       { return value; }
-	}
+
 
 
 	@Override
@@ -277,8 +275,7 @@ public class Covid19 extends ServENT {
 		return ctNewRemoteData.value;
 	}
 
-	private void importJSONData(ifRemoteDataObj rmdObj, MutableInt ctRemoteDataRecs, MutableInt ctNewRemoteData,
-			MutableInt ctBadRecords, Savepoint savePt, Connection con, InputStream is)
+	private void importJSONData(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt, Connection con, InputStream is)
 					throws SQLException, IOException {
 		HashMap<String, Object> recMap;
 		boolean flgCreate;
@@ -286,20 +283,20 @@ public class Covid19 extends ServENT {
 		String msgInfo;
 
 		while(jsonItr.hasNext()){
-			ctRemoteDataRecs.increment();
+			ctrObj.ctTotalRecords.increment();
 			recMap = jsonItr.next();
 			try{
 				flgCreate = rmdObj.createRemoteDataRecord(recMap,con);
-				if(flgCreate) ctNewRemoteData.increment();
+				if(flgCreate) ctrObj.ctNewRecordsCreated.increment();
 				msgInfo = "Processed remote record: " + recMap.toString();
 
 				logger.info(msgInfo);
-				if(ctRemoteDataRecs.value%100 == 0){
-					logger.info(ctRemoteDataRecs + " records processed.");
+				if(ctrObj.ctTotalRecords.value%100 == 0){
+					logger.info(ctrObj.ctTotalRecords.value + " records processed.");
 				}
 				savePt = con.setSavepoint();
 			}catch(Exception ex){
-				ctBadRecords.increment();;
+				ctrObj.ctBadRecords.increment();;
 				logger.error(ex.getMessage());
 				con.rollback(savePt);
 			}
@@ -307,11 +304,11 @@ public class Covid19 extends ServENT {
 		jsonItr.close();
 	}
 
-	public String reportImportStats(Map<CVD_DataCt,MutableInt> retMap){
+	public String reportImportStats(RemoteDataRecordCtr ctrObj){
 
-		Integer ctRemoteDataRecs = retMap.get(CVD_DataCt.ctRemoteDataRecs).value;
-		Integer ctNewRemoteData = retMap.get(CVD_DataCt.ctNewRemoteData).value;
-		Integer ctBadRecords = retMap.get(CVD_DataCt.ctBadRecords).value;
+		Integer ctRemoteDataRecs = ctrObj.ctTotalRecords.value;
+		Integer ctNewRemoteData = ctrObj.ctNewRecordsCreated.value;
+		Integer ctBadRecords = ctrObj.ctBadRecords.value;
 		String msg ="Finished importing module records.\r\n";
 		msg += "Processed " + ctRemoteDataRecs + " records.\r\n";
 		//		       if(ctDuplicate > 0) msg += "Found " + ctDuplicate + " duplicate entries.\r\n";
@@ -326,20 +323,14 @@ public class Covid19 extends ServENT {
 		return msg;
 	}
 
-	public Map<String,Integer> retrieveRemoteData(ifDataSrcWrapper dsw, ifRemoteDataObj rmdObj, Connection con) throws IOException, Exception, SQLException{
+	public RemoteDataRecordCtr retrieveRemoteData(ifDataSrcWrapper dsw, ifRemoteDataObj rmdObj, Connection con) throws IOException, Exception, SQLException{
 		boolean flgLocalDebug = false;
 		boolean flgAutoCommitAsIFoundIt = con.getAutoCommit();
-		Map<CVD_DataCt,MutableInt> ctMap = new HashMap<CVD_DataCt,MutableInt>();
-		Map<String, Integer> retMap = new HashMap<String, Integer>();
+
 		Savepoint savePt;
 		//		Integer ctRemoteDataRecs = 0, ctReturningRemoteData=0, ctUpdatedRemoteData=0, ctNewRemoteData=0, ctBadRecords=0;
-		ctMap.put(CVD_DataCt.ctRemoteDataRecs, new MutableInt());
-		ctMap.put(CVD_DataCt.ctNewRemoteData, new MutableInt());
-		ctMap.put(CVD_DataCt.ctBadRecords, new MutableInt());
-		MutableInt ctNewRemoteData = ctMap.get(CVD_DataCt.ctNewRemoteData);
-		MutableInt ctBadRecords = ctMap.get(CVD_DataCt.ctBadRecords);
-		MutableInt ctRemoteDataRecs = ctMap.get(CVD_DataCt.ctRemoteDataRecs);
-		HashMap<String,Object> recMap;
+
+		RemoteDataRecordCtr ctrObj = new RemoteDataRecordCtr();
 
 		String fqdn = dsw.getDataURL();
 		DataFmt dataFmt = dsw.getFormat();
@@ -367,11 +358,11 @@ public class Covid19 extends ServENT {
 			switch(srcOrg) {
 			case JH:
 				//Johns Hopkins CSV files
-				importJHData(rmdObj, ctNewRemoteData, ctBadRecords, ctRemoteDataRecs, savePt, con, is);		
+				dsw.importRecords(rmdObj,ctrObj,logger, savePt,con,is);
 				break;
 			case CTP:
 				// Covid Tracking Project json files
-				importJSONData(rmdObj, ctRemoteDataRecs, ctNewRemoteData, ctBadRecords, savePt, con, is);
+				importJSONData(rmdObj, ctrObj, logger, savePt, con, is);
 			}
 			if(dataFmt.equals(DataFmt.CSV)) {
 
@@ -380,10 +371,10 @@ public class Covid19 extends ServENT {
 
 			}
 		}catch(IOException ex){
-			ctRemoteDataRecs.decrement();
+			ctrObj.ctTotalRecords.decrement();
 			throw ex;
 		} catch(Exception ex){
-			ctRemoteDataRecs.decrement();
+			ctrObj.ctBadRecords.increment();
 			throw ex;
 		}
 		finally{
@@ -392,17 +383,10 @@ public class Covid19 extends ServENT {
 
 			shutDown();
 		}
-		ctMap.put(CVD_DataCt.ctRemoteDataRecs, ctRemoteDataRecs);
-		ctMap.put(CVD_DataCt.ctNewRemoteData, ctNewRemoteData);
-		ctMap.put(CVD_DataCt.ctBadRecords, ctBadRecords);
-		if(ctRemoteDataRecs.value > 0) reportImportStats(ctMap);
+		if(ctrObj.ctTotalRecords.value > 0) reportImportStats(ctrObj);
 
-		Set<CVD_DataCt> cts = 		ctMap.keySet();
-		for(CVD_DataCt ct : cts) {
-			retMap.put(ct.name(), ctMap.get(ct).value);
-		}
 
-		return retMap;
+		return ctrObj;
 	}
 
 	private void updateCombinedData(RemoteDataObj rdo, Connection con) throws Exception {
@@ -440,7 +424,8 @@ public class Covid19 extends ServENT {
 				CVD_Route rte = CVD_Route.getRoute(routeString);
 				switch(rte) {
 				case getCountryData:
-					q = "SELECT countrycode, name FROM country WHERE region != '' AND region is not null ORDER BY name";
+					tp = CVD_TP.sql_GetCountries.tPath;
+					q = parser.parseQuery(tp, requestMap);
 					rso = RSObj.getRSObj(q, "countrycode", con);
 					break;
 				case getCombinedData:
@@ -512,12 +497,14 @@ public class Covid19 extends ServENT {
 				logger.info("Starting retrieval of remote data");
 				rdo.expireAllRemoteDataRecords(map);
 				logger.info("Expired remote records");
-				Map<String,Integer> retMap = new HashMap<String,Integer>();
-				retMap = retrieveRemoteData(rdEnt, rdo, con);
+				RemoteDataRecordCtr ctMap = retrieveRemoteData(rdEnt, rdo, con);
+				HashMap<String,Object>retMap = new HashMap<String,Object>();
+				retMap.put("cts", ctMap);
+				retMap.put("src", src.name());
+				retMap.put("srccode", src.srcCode);
 				updateCombinedData(rdo,con);
 				con.setAutoCommit(true);
 				logger.info("Finished with remote data retrieval");
-				retMap.put("ctNewRecords", 100000);
 				String json = JSONUtil.toJSON(retMap);
 				ajaxResponse(json, response);
 				return;
@@ -543,8 +530,7 @@ public class Covid19 extends ServENT {
 					RemoteDataObj rdo = getRDO(src.rdEnt,con);
 					rdo.expireAllRemoteDataRecords(map);
 					logger.info("Expired remote records");
-					Map<String,Integer> retMap = new HashMap<String,Integer>();
-					retMap = retrieveRemoteData(src.rdEnt, rdo, con);
+					RemoteDataRecordCtr retMap = retrieveRemoteData(src.rdEnt, rdo, con);
 					updateCombinedData(rdo,con);
 					logger.info("Finished with import for: " + src.desc);
 				}

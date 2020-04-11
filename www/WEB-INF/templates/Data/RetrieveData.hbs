@@ -1,17 +1,21 @@
-{{> _include/header2 }}
+{{> _include/header }}
  
     <div style="float:left;clear:all">
     <ul>
     <li><div>
     Retrieve remote data
-    <select name="dataSrc" onChange="getData(this);">
-    
-    	<option value="">-- Select Data Source --</option>
-    	<option value="JH_CONF">Get JH confirmed cases time series</option>
-    	<option value="JH_DEAD">Get JH new deaths time series</option>
-    	<option value="JH_RECOVER">Get JH recovered cases time series</option>
-    	<option value="CTP_STATES_DAILY">Get Covid Tracking Project states/daily</option>
-    </select>
+	    <form>
+	    <select name="dataSrc" onChange="getData(this);">
+	    
+	    	<option value="">-- Select Data Source --</option>
+	    	<option value="JH_US_CONF">Get JH US confirmed cases time series</option>
+	    	<option value="JH_US_DEATHS">Get JH US new deaths time series</option>
+	    	<option value="JH_GLBL_CONF">Get JH Global confirmed cases time series</option>
+	    	<option value="JH_GLBL_DEATHS">Get JH Global new deaths time series</option>
+	    	<option value="JH_GLBL_RECOVER">Get JH Global recovered cases time series</option>
+	    	<option value="CTP_STATES_DAILY">Get Covid Tracking Project US states/daily</option>
+	    </select> <button id="go-getData" onclick="getData(this.form.dataSrc">GO</button>
+	    </form>	
     	</div></li>
     <li> Retrieve ALL remote data: <button onclick="getALLData()">GO</button></li>
     </ul>
@@ -23,25 +27,37 @@
 <script>
 function getData(el){
     if(!el.value) return;
+    document.body.style.cursor='wait';
+    document.getElementById("go-getData").disabled=true;
     let url ="/cvd/retrieveData?dataSrc=" + el.value;
     $.get(url).then(function(data){
+		document.body.style.cursor='default';
 		let msg;
-		msg = data.toString();
+		msg = data.src + "\r\n";
+		msg += data.srccode + "\r\n";
+		msg += "Reords: " + data.cts.ctTotalRecords.value + "\r\n";
+		msg += "Created: " + data.cts.ctNewRecordsCreated.value + "\r\n";
+		msg += "Errors: " + data.cts.ctBadRecords.value;
+
 		alert(msg);
+	    document.getElementById("go-getData").disabled=false;
     }).catch(function(err){
+		document.body.style.cursor='default';
+	    document.getElementById("go-getData").disabled=false;
 		alert(err.responseText);
     });
 }
 
 function getALLData(){
-        let url ="/cvd/retrieveALLData";
+    document.body.style.cursor='wait';
+    let url ="/cvd/retrieveALLData";
     $.get(url).then(function(data){
-		debugger;
 		let msg;
 		msg = data;
+		document.body.style.cursor='default';
 		alert(msg);
     }).catch(function(err){
-		debugger;
+		document.body.style.cursor='default';
 		alert(err.responseText);
     });
 }

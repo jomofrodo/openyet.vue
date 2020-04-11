@@ -26,9 +26,8 @@
     <Logger name="com.netazoic.ENT.ServENT" level="DEBUG" additivity="false">
       <AppenderRef ref="ENT_LOG_FILE"/>
     </Logger>
-    <Root level="ERROR">
+    <Root level="WARN">
       <AppenderRef ref="Console"/>
-      <appender-ref ref="Sentry" level="WARN" />
     </Root>
   </Loggers>
 </Configuration>

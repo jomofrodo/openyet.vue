@@ -1,0 +1,1 @@
+DELETE FROM jh_us_timeseries WHERE type = ?;

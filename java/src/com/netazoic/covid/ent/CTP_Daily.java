@@ -1,13 +1,18 @@
 package com.netazoic.covid.ent;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
+
+import org.apache.logging.log4j.Logger;
 
 import com.netazoic.covid.ent.JHTimeSeries.JH_TP;
 import com.netazoic.ent.ENTException;
@@ -16,6 +21,7 @@ import com.netazoic.ent.rdENT;
 import com.netazoic.ent.rdENT.SRC_ORG;
 import com.netazoic.util.NamedParameterStatement;
 import com.netazoic.util.SQLUtil;
+import com.netazoic.util.ifRemoteDataObj;
 
 public class  CTP_Daily extends rdENT<CTP_Daily> {
 
@@ -187,6 +193,15 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	@Override
 	public DataFmt getFormat() {
 		return this.dataFmt;
+	}
+
+
+
+	@Override
+	public void importRecords(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
+			Connection con, InputStream is) throws IOException, Exception, SQLException {
+		// NOT USED
+		
 	}
 		
 

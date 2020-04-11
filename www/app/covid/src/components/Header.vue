@@ -5,6 +5,7 @@
               <li class="nav-item">
                 <router-link 
                   :to="{ name: 'home'}"
+                  exact
                   class="nav-link"
                   active-class="active">
                   Home</router-link>
@@ -13,42 +14,57 @@
           </div>
           <div class="feed-toggle">
             <ul class="nav nav-pills outline-active">
-              <li class="nav-item">
+               <li v-for="rt in routes" :key="rt.label"  class="nav-item">
                 <router-link
-                  :to="{ name: 'nations-static' }"
-                  exact
                   class="nav-link"
-                  active-class="active"
-                >Static Feed</router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
-                  :to="{ name: 'nations' }"
+                  :to="{ name: rt.name }"
                   exact
-                  class="nav-link"
-                  active-class="active"
-                >Dynamic Feed</router-link>
+                  active-class="active">{{rt.label}}
+                </router-link>
               </li>
-              <li class="nav-item">
-                <router-link
-                  :to="{ name: 'combined-grid' }"
-                  exact
-                  class="nav-link"
-                  active-class="active"
-                >Combined Data</router-link>
-              </li>
-            </ul>
+             </ul>
           </div>
   </nav>
 </template>
-
 <script>
+const headerRoutes = [
+
+ {name:'nations-static',label:'Static Feed'},
+ {name:'nations',label:'Dynamic Feed'},
+ {name:'combined-grid',label:'Combined Data'},
+  
+];
 import { mapGetters } from "vuex";
 
 export default {
   name: "RwvHeader",
+  data(){
+    return {
+      routes: headerRoutes
+    }
+  },
   computed: {
     ...mapGetters(["currentUser", "isAuthenticated"])
   }
 };
 </script>
+
+<style scoped>
+.nav-pils .nav-link{
+  color: #473c3c;
+}
+a {
+    color: #473c3c;
+    text-decoration: none;
+    background-color: transparent;
+}
+a:hover{
+  color: #473c3c;
+  font-weight:bold;
+}
+.nav-pills .nav-link.active, .nav-pills .show>.nav-link, .my-pils .nav-link.active {
+    color: #111010;
+    background-color: #eaecef;
+    font-weight: bold;
+}
+</style>
