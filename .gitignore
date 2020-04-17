@@ -27,3 +27,5 @@ www/static
 www/app/covid/dist
 www/app/covid/yarn-error.log
 *.~lock*
+/.gradle/
+build

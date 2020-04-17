@@ -1,5 +1,6 @@
 <project xmlns:ivy="antlib:org.apache.ivy.ant" name="Covid19" default="resolve">
     
+	<property name="webinf.dir" value="../../www/WEB-INF"/>
     <property name="lib.dir" value="../../www/WEB-INF/lib" />
 	<property name="build.lib" value="./lib"/>
 	
@@ -50,6 +51,12 @@
 	    <get dest="${user.home}/.ant/lib/ivy.jar" src="http://search.maven.org/remotecontent?filepath=org/apache/ivy/ivy/2.2.0/ivy-2.2.0.jar"/>
 	</target>
 
+	<target name="copyLogging" description="Copy logging format into WEB-INF/classes">
+		<copy
+			file="${webinf.dir}/conf/log4j2.xml"
+			todir="${webinf.dir}/classes"
+		/>
+	</target>
     
 
 </project>

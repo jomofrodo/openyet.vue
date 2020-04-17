@@ -1,0 +1,76 @@
+plugins {
+	id 'eclipse'
+	id 'war'
+}
+
+group = 'com.netazoic'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+webAppDirName = 'www'
+
+
+
+repositories {
+	mavenCentral()
+}
+
+configurations {
+  localLibraries
+  compileTime
+}
+
+dependencies {
+
+	implementation 'javax.servlet:javax.servlet-api:3.0.1'
+	implementation group: 'joda-time', name: 'joda-time', version: '2.10.5'
+	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.10.3'
+	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.10.3'
+	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.3'
+	implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-csv', version: '2.10.3'
+	implementation group: 'commons-io', name: 'commons-io', version: '2.6'
+	implementation group: 'org.pegdown', name: 'pegdown', version: 'latest.integration'
+	implementation group: 'com.github.jknack', name: 'handlebars', version:'4.1.2'
+	implementation group: 'org.postgresql', name:'postgresql', version: '42.2.9'
+	implementation group: 'org.apache.commons', name:'commons-lang3', version:'3.4'
+	implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.30'             
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.1'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.1'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.13.1'
+ 
+    testImplementation group: 'junit', name:'junit', version: '4.+'
+ 
+
+ }
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["java/src", "java/ent/src"]
+        }
+    }
+}
+if (hasProperty('buildScan')) {
+	buildScan {
+   		licenseAgreementUrl = 'https://gradle.com/terms-of-service'
+    	licenseAgree = 'yes'
+	}
+}
+
+task retrieve(type: Copy) {
+	group = 'local'
+	description = 'retrieve gradle-controlled jars into WEB-INF/lib'
+//    into "$buildDir/libs"
+    into "$webAppDirName/WEB-INF/lib"
+    from configurations.runtimeClasspath
+}
+
+task copyLogConf(type: Copy){
+	group = 'local'
+	description = 'copy logging conf to WEB-INF/classes'
+	mustRunAfter "clean"
+	from "$webAppDirName/WEB-INF/conf/log4j2.xml"
+	into "$webAppDirName/WEB-INF/classes"
+}
+
+
