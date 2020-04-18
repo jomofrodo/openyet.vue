@@ -9,12 +9,13 @@ import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
 
+import com.netazoic.covid.Covid19.CVD_TP;
 import com.netazoic.ent.ENTException;
 import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
 public class JH_US_Confirmed extends JHTimeSeries implements ifDataSrcWrapper{
-	public Long UID;
+	public Double UID;
 	public String iso3;
 //	public String code3;
 	public Double FIPS;
@@ -70,7 +71,17 @@ public class JH_US_Confirmed extends JHTimeSeries implements ifDataSrcWrapper{
 	public Integer createCombinedRecs() throws Exception {
 		HashMap map = new HashMap();
 		String q =  parseUtil.parseQueryFile(TP.sql_CREATE_COMBINED_RECS.tPath,map);
-		return SQLUtil.execSQL(q, con);
+		int ctCreated =  SQLUtil.execSQL(q, con);
+		
+		String tp = CVD_TP.sql_CreateCountryRollups.tPath;
+		q = parseUtil.parseQuery(tp,map);
+		ctCreated += SQLUtil.execSQL(q, con);
+		
+		tp = CVD_TP.sql_CreateStateRollups.tPath;
+		q = parseUtil.parseQuery(tp,map);
+		ctCreated += SQLUtil.execSQL(q, con);
+		
+		return ctCreated;
 	}
 	
 	@Override

@@ -27,15 +27,16 @@ import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
 public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
+	private static final int MAX_BAD_RECORDS = 100;
 	// A Johns Hopkins  time series entry
-	
+
 	protected ifDataType tsType;
 	DataFmt dataFmt = DataFmt.CSV;
-	
-	
+
+
 	public enum JH_TimeSeriesType implements ifDataType{
 		confirmed("C"), dead("D"), recovered("R");
-		
+
 		String code;
 		JH_TimeSeriesType(String c){
 			this.code = c;
@@ -55,7 +56,7 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 			this.idx = x;
 		}
 	}
-	
+
 	/*
 	 * UID,iso2,iso3,code3,FIPS,Admin2,Province_State,Country_Region,Lat,Long_,Combined_Key, TS ...
 	 */
@@ -69,7 +70,7 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 			this.idx = x;
 		}
 	}
-	
+
 	public enum JH_US_DB_Column{
 		uid,
 		iso3,
@@ -82,15 +83,15 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 		ct,
 		type, population, city,
 	}
-	
+
 	public enum JH_TP implements if_TP{
 
-        sql_CREATE_RECORDx("/Data/sql/JH/TimeSeries/psCreateRecord.sql"),
-        sql_CREATE_COMBINED_RECS("/Data/sql/JH/TimeSeries/CreateCombinedRecs.sql");
+		sql_CREATE_RECORDx("/Data/sql/JH/TimeSeries/psCreateRecord.sql"),
+		sql_CREATE_COMBINED_RECS("/Data/sql/JH/TimeSeries/CreateCombinedRecs.sql");
 
-		
+
 		public String tPath;
-		
+
 		JH_TP(String p){
 			this.tPath = p;
 		}
@@ -103,16 +104,16 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 		@Override
 		public void setTP(String p) {
 			this.tPath = p;
-			
+
 		}
-		
+
 	}
 	public JHTimeSeries() throws ENTException {
 		super();
 		initENT();
 	}
 
-	
+
 	@Override
 	public void initENT() throws ENTException{
 		this.nit.ctpClass = JH_TP.class;
@@ -120,16 +121,16 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 		nit.NIT_TABLE = "covid.jh_timeseries";
 		nit.FLD_NIT_ID = "date";
 		super.initENT();
-		
+
 	}
-	
+
 	@Override
 	public Integer createCombinedRecs() throws Exception {
 		HashMap map = new HashMap();
 		String q =  parseUtil.parseQueryFile(JH_TP.sql_CREATE_COMBINED_RECS.tPath,map);
 		return SQLUtil.execSQL(q, con);
 	}
-	
+
 	@Override
 	public Long createRecord(HashMap<String, Object> paramMap, Connection con) throws ENTException {
 		// TODO Auto-generated method stub
@@ -139,9 +140,9 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 	@Override
 	public void deleteRecord(String webuserID, String comments) throws ENTException {
 		// TODO Auto-generated method stub
-		
+
 	}
-	
+
 	@Override
 	public String getDataURL() {
 		return this.dataURL;
@@ -150,7 +151,7 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 	@Override
 	public ifDataSrc getSrc() {
 		return this.dataSrc;
-	
+
 	}
 
 	@Override
@@ -160,26 +161,26 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 
 	@Override
 	public void setExpireAllStatement(PreparedStatement psDeleteRemoteData) throws SQLException {
-	
+
 		psDeleteRemoteData.setString(1, this.tsType.getCode());
 	}
 
 	@Override
 	public void setInsertStatement(PreparedStatement ps) throws SQLException {
-//		NOT IN USE
-		
+		//		NOT IN USE
+
 	}
 
 	@Override
 	public void setSrc(ifDataSrc src) {
 		this.dataSrc = src;
-		
+
 	}
 
 	@Override
 	public void setType(ifDataType type) {
 		this.tsType = type;
-		
+
 	}
 
 	@Override
@@ -192,14 +193,14 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 	@Override
 	public void setUpdateStatement(PreparedStatement psUpdateRemoteData) throws SQLException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public SRC_ORG getSrcOrg() {
 		return this.srcOrg;
 	}
-	
+
 	@Override
 	public DataFmt getFormat() {
 		return this.dataFmt;
@@ -236,6 +237,7 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 			// access by column name, as defined in the header row...
 			Object[] keys =  row.keySet().toArray();
 			state = row.get(keys[0]);
+			if(state!=null && state.isEmpty()) state = null;
 			country = row.get(keys[1]);
 			recMap.put(JH_Column.state.name(), state);
 			recMap.put(JH_Column.country.name(), country);
@@ -316,6 +318,7 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 			fips = row.get(JH_US_Source_Column.FIPS.name());
 			if(fips.contains(""))fips = "0";
 			state = row.get(JH_US_Source_Column.Province_State.name());
+			if(state!=null && state.isEmpty()) state = null;
 			country = row.get(JH_US_Source_Column.Country_Region.name());
 			city = row.get(JH_US_Source_Column.Admin2.name());
 			population = row.get(JH_US_Source_Column.Population.name());
@@ -339,7 +342,15 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 				}
 				date = LocalDate.parse(dateStr, formatter);
 				ctStr = row.get(keys[idx]);
-				ct = Integer.parseInt(ctStr);
+
+				try{
+					ct = Integer.parseInt(ctStr);
+				}catch(Exception ex) {
+					if(ctStr.indexOf(".")>0) {
+						ctStr = ctStr.substring(0,ctStr.indexOf("."));   //Sometimes with a .0?
+						ct = Integer.parseInt(ctStr);
+					} else throw new Exception("Bad ct value: " + ctStr);
+				}
 				recMap.put(JH_Column.date.name(), dateStr);
 				recMap.put(JH_Column.ct.name(), ct);
 				try {
@@ -350,9 +361,7 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 					msgInfo = "Processed remote record: " + recMap.toString();
 
 					logger.info(msgInfo);
-					if(ctrObj.ctTotalRecords.value%1000 == 0){
-						logger.warn(ctrObj.ctTotalRecords.value + " records processed.");
-					}
+
 				}catch(SQLException sql) {
 					logger.error(sql.getMessage());
 					con.rollback(savePt);
@@ -361,6 +370,15 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 					logger.error(ex.getMessage());
 					con.rollback(savePt);
 					ctrObj.ctBadRecords.increment();
+					if(ctrObj.ctBadRecords.value > MAX_BAD_RECORDS) {
+						logger.error("Reached MAX_BAD_RECORDS limit, exiting");
+						itr.emptyIterator();
+						return;
+					}
+				}finally {
+					if(ctrObj.ctTotalRecords.value%1000 == 0){
+						logger.warn(ctrObj.ctTotalRecords.value + " records processed.");
+					}
 				}
 			}
 			// Commit after processing each row
@@ -373,6 +391,6 @@ public class JHTimeSeries extends rdENT<ifDataSrcWrapper>{
 
 
 
-		
+
 
 }

@@ -1,4 +1,4 @@
--- State totals -- create state rollups where state entries are broken out by city
+-- Country totals -- create country rollups where country entries are broken out by state
 
 
 -- SELECT * FROM ctp_statesdaily;
@@ -14,7 +14,6 @@ DELETE FROM combined WHERE countrycode = 'USA' AND state is null;
 BEGIN TRANSACTION;
 -- commit;
 INSERT INTO combined (
-state,
 country,
 confirmed,
 positive,
@@ -32,8 +31,7 @@ date,
 sourcecode,
 countrycode
 )
-SELECT state,
-country,
+SELECT country,
 sum(confirmed) as confirmed,
 sum(positive) as positive,
 sum(positiveincrease) as positiveincrease,
@@ -51,8 +49,7 @@ sourcecode,
 countrycode
 FROM combined
 WHERE 1=1 -- countrycode = 'USA'
-AND state is not null
-AND city is not null
-GROUP BY country, state, date, countrycode, datechecked,sourcecode;
+AND state is not null AND state != ''
+GROUP BY country, date, countrycode, datechecked,sourcecode;
 
 commit;

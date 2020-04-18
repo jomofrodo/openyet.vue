@@ -70,7 +70,8 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	public enum CTP_TP implements if_TP{
 
 		sql_CREATE_RECORD(null),  //Use a NamedParameterStatement
-		sql_CREATE_COMBINED_RECS("/Data/sql/CTP/CreateCombinedRecs.sql");
+		sql_CREATE_COMBINED_RECS("/Data/sql/CTP/CreateCombinedRecs.sql"),  //NOT IN USE 
+		sql_UPDATE_COMBINED_RECS("/Data/sql/CTP/UpdateCombinedRecs.sql");
 
 
 		public String tPath;
@@ -126,7 +127,9 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	@Override
 	public Integer createCombinedRecs() throws Exception {
 		HashMap map = new HashMap();
-		String q =  parseUtil.parseQueryFile(CTP_TP.sql_CREATE_COMBINED_RECS.tPath,map);
+		// We don't actually create new combined recs for CTP Daily data - we just update existing records
+//		String q =  parseUtil.parseQueryFile(CTP_TP.sql_CREATE_COMBINED_RECS.tPath,map);
+		String q = parseUtil.parseQueryFile(CTP_TP.sql_UPDATE_COMBINED_RECS.tPath, map);
 		return SQLUtil.execSQL(q, con);
 	}
 	

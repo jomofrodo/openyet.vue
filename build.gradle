@@ -1,12 +1,12 @@
 plugins {
 	id 'eclipse'
-	id 'war'
+	id 'java'
 }
 
 group = 'com.netazoic'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '1.8'
-webAppDirName = 'www'
+//webAppDirName = 'www'
 
 
 
@@ -61,7 +61,7 @@ task retrieve(type: Copy) {
 	group = 'local'
 	description = 'retrieve gradle-controlled jars into WEB-INF/lib'
 //    into "$buildDir/libs"
-    into "$webAppDirName/WEB-INF/lib"
+    into "www/WEB-INF/lib"
     from configurations.runtimeClasspath
 }
 
@@ -69,8 +69,13 @@ task copyLogConf(type: Copy){
 	group = 'local'
 	description = 'copy logging conf to WEB-INF/classes'
 	mustRunAfter "clean"
-	from "$webAppDirName/WEB-INF/conf/log4j2.xml"
-	into "$webAppDirName/WEB-INF/classes"
+	from "www/WEB-INF/conf/log4j2.xml"
+	into "www/WEB-INF/classes"
 }
 
+eclipse {
+  classpath {
+    defaultOutputDir = file('www/WEB-INF/classes')
+  }
+}
 

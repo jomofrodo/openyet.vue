@@ -1,6 +1,5 @@
 <template>
   <div id="app">
-
     <div id="asyncticator-mount"></div>
     <div>
       <h3>Combined Data Grid</h3>
@@ -13,16 +12,27 @@
       <div class="control">
         <column-selector :colDefs="colDefs" />
       </div>
-      <div class="control" style="width:20rem" id="cc" >
-            <vue-select
-              :options="countries"
-              v-model="filter.country"
-              placeholder="Select a country"
-              label="name"
-              class="vs__search"
-              style="width:100%"
-            ></vue-select>
- 
+      <div class="control" style="width:20rem" id="cc">
+        <vue-select
+          :options="countries"
+          v-model="filter.country"
+          placeholder="Select a country"
+          label="name"
+          class="vs__search"
+          style="width:100%"
+        ></vue-select>
+      </div>
+      <i class="fa-check-square" :class="{fas:flgState, 'far':!flgState}" @click="toggleState" />
+      <label>State</label>
+      <div class="control" style="width:20rem" id="sc" v-if="flgState">
+        <vue-select
+          :options="states"
+          v-model="filter.state"
+          placeholder="Select a state"
+          label="name"
+          class="vs__search"
+          style="width:100%"
+        ></vue-select>
       </div>
     </div>
     <njs-grid
@@ -51,7 +61,6 @@
     >
       <div v-html="alertMsg"></div>
     </jo-modal>
-
   </div>
 </template>
 
@@ -63,7 +72,7 @@ import Vue from "vue";
 import njsGrid from "../njsGrid/src/njsGrid.vue"; // local src
 import joModal from "../components/joModal.vue";
 import ColumnSelector from "../components/ColumnSelector.vue";
-import vueSelect from 'vue-select';
+import vueSelect from "vue-select";
 import * as commonOptions from "../grid/common-options";
 import * as util from "../lib/util.js";
 
@@ -91,8 +100,10 @@ export default {
       searchQuery: "",
       colDefs: [],
       countries: [],
+      states: [],
       filter: {
-        country: null
+        countrycode: null,
+        statecode: null
       },
       flgReadOnly: true,
       gridDefaults: [],
@@ -104,6 +115,7 @@ export default {
         dlgAlert: { id: "dlgAlert", flg: false }
       },
       urlCountries: "cvd/getData/countries",
+      urlStates: "cvd/getData/states",
       urlData: "cvd/getData/combined?limit=1000",
       reloadIdx: 1,
       alertMsg: "",
@@ -114,32 +126,22 @@ export default {
   created() {
     const vm = this;
     this.initGrid();
-    const jsonStr = window.localStorage.getItem("countries.json");
-    //DEBUG
-    if (false) vm.countries = JSON.parse(jsonStr);
-    else {
-      util
-        .getData(vm.urlCountries, vm)
-        .then(rso => {
-          // Write data to local storage'
-          const recs = rso.items;
-          window.localStorage.setItem("countries.json", JSON.stringify(recs));
-          vm.countries = recs;
-        })
-        .catch(err => alert(err));
-    }
+    this.getCountries();
+    this.getStates();
   },
   computed: {
     dataURL() {
       let url = this.urlData;
       // check if state column is displayed
-      const colState = this.colDefs.find(function(col) {
-        return col.colName == "state";
-      });
-      if (!colState.hidden) url += "&states=true";
+
+      if (this.flgState) url += "&states=true";
+      if (this.flgCity) url += "&cities=true";
       // Add a country if selected
       if (this.filter.country) {
         url += "&countrycode=" + this.filter.country.countrycode;
+      }
+      if(this.filter.state){
+        url += "&statecode=" + this.filter.state.statecode;
       }
       return url;
     },
@@ -152,6 +154,18 @@ export default {
       });
 
       return rec;
+    },
+    flgCity() {
+      const colCity = this.colDefs.find(function(col) {
+        return col.colName == "city";
+      });
+      return !colCity.hidden;
+    },
+    flgState() {
+      const colState = this.colDefs.find(function(col) {
+        return col.colName == "state";
+      });
+      return !colState.hidden;
     }
   },
   watch: {
@@ -160,7 +174,17 @@ export default {
       const country = this.countries.find(c => {
         return c.name == newVal;
       });
-      if (country) this.filter.country = country;
+      if (country){
+         this.filter.country = country;
+         this.getStates();
+      }
+    },
+    state(newVal) {
+      this.filter.state = null;
+      const state = this.states.find(c => {
+        return c.name == newVal;
+      });
+      if (state) this.filter.state = state;
     },
     colDefs(newVal) {
       if (!newVal) return;
@@ -237,6 +261,43 @@ export default {
         });
       }
     },
+    getCountries() {
+      const vm = this;
+      const jsonStr = window.localStorage.getItem("countries.json");
+      //DEBUG
+      if (false) vm.countries = JSON.parse(jsonStr);
+      else {
+        util
+          .getData(vm.urlCountries, vm)
+          .then(rso => {
+            // Write data to local storage'
+            const recs = rso.items;
+            window.localStorage.setItem("countries.json", JSON.stringify(recs));
+            vm.countries = recs;
+          })
+          .catch(err => alert(err));
+      }
+    },
+    getStates() {
+      const vm = this;
+      const jsonStr = window.localStorage.getItem("states.json");
+      //DEBUG
+      if (false) vm.states = JSON.parse(jsonStr);
+      else {
+        let url = vm.urlStates;
+        if (this.filter.country)
+          url += "?countrycode=" + this.filter.country.countrycode;
+        util
+          .getData(url, vm)
+          .then(rso => {
+            // Write data to local storage'
+            const recs = rso.items;
+            window.localStorage.setItem("states.json", JSON.stringify(recs));
+            vm.states = recs;
+          })
+          .catch(err => alert(err));
+      }
+    },
     onUpdateGridVal(row, col, idx) {
       if (!col.onUpdate) return null;
       col.onUpdate(row, col, this.gridDefaults);
@@ -254,6 +315,12 @@ export default {
     toggleDialog(dlg) {
       dlg.flg = !dlg.flg;
       //    this.dlgs[dlgID] = !this.dlgs[dlgID];
+    },
+    toggleState() {
+      const colState = this.colDefs.find(function(col) {
+        return col.colName == "state";
+      });
+      colState.hidden = !colState.hidden;
     }
   }
 };

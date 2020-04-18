@@ -17,7 +17,7 @@ import com.netazoic.util.ifRemoteDataObj;
 public class JH_US_Deaths extends JHTimeSeries {
 	// UID,iso2,iso3,code3,FIPS,Admin2,Province_State,Country_Region,Lat,Long_,Combined_Key,Population,1/22/20
 	
-	public Long UID;
+	public Double UID;
 	public String iso3;
 //	public String code3;
 	public Double FIPS;

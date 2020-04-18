@@ -14,10 +14,11 @@
 	    	<option value="JH_GLBL_DEATHS">Get JH Global new deaths time series</option>
 	    	<option value="JH_GLBL_RECOVER">Get JH Global recovered cases time series</option>
 	    	<option value="CTP_STATES_DAILY">Get Covid Tracking Project US states/daily</option>
-	    </select> <button id="go-getData" onclick="getData(this.form.dataSrc">GO</button>
+	    </select> <button id="go-getData" onclick="getData(this.form.dataSrc)">GO</button>
 	    </form>	
     	</div></li>
     <li> Retrieve ALL remote data: <button onclick="getALLData()">GO</button></li>
+    <li> Create Combined data: <button onclick="createCombined()">GO</button></li>
     </ul>
     </div>
     <!-- built files will be auto injected -->
@@ -51,6 +52,20 @@ function getData(el){
 function getALLData(){
     document.body.style.cursor='wait';
     let url ="/cvd/retrieveALLData";
+    $.get(url).then(function(data){
+		let msg;
+		msg = data;
+		document.body.style.cursor='default';
+		alert(msg);
+    }).catch(function(err){
+		document.body.style.cursor='default';
+		alert(err.responseText);
+    });
+}
+
+function createCombined(){
+	    document.body.style.cursor='wait';
+    let url ="/cvd/createCombinedData";
     $.get(url).then(function(data){
 		let msg;
 		msg = data;
