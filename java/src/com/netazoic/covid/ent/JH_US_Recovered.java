@@ -2,7 +2,7 @@ package com.netazoic.covid.ent;
 
 import com.netazoic.ent.ENTException;
 
-public class JH_US_Recovered extends JHTimeSeries {
+public class JH_US_Recovered extends JH_TimeSeries {
 	
 	public String state;
 	public String country;
@@ -19,7 +19,7 @@ public class JH_US_Recovered extends JHTimeSeries {
 
 		super();
 		this.dataURL = urlBase + DATA_URL;
-		this.srcOrg = SRC_ORG.JH;
+		this.srcOrg = SRC_ORG.JH_US;
 		this.tsType = JH_TimeSeriesType.recovered;
 		this.type = this.tsType.getCode();
 	}

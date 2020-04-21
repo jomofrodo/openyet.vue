@@ -30,6 +30,11 @@ export default new Router({
       path: "/grid/combined",
       name: "combined-grid",
       component: () => import("@/views/CombinedGrid")
+    },
+    {
+      path: "/data/update",
+      name: "data-update",
+      component: () => import("@/views/DataUpdate")
     }
     
   ]

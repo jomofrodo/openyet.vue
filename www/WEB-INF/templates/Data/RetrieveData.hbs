@@ -18,7 +18,22 @@
 	    </form>	
     	</div></li>
     <li> Retrieve ALL remote data: <button onclick="getALLData()">GO</button></li>
-    <li> Create Combined data: <button onclick="createCombined()">GO</button></li>
+	<form>
+    <li> Create Combined data: <br/>
+		  <select name="dataSrc" >
+	    
+	    	<option value="">-- Select Data Source --</option>
+			<option value="">Create for ALL data sources</option>
+	    	<option value="JH_US_CONF">JH US confirmed cases time series</option>
+	    	<option value="JH_US_DEATHS">JH US new deaths time series</option>
+	    	<option value="JH_GLBL_CONF">JH Global confirmed cases time series</option>
+	    	<option value="JH_GLBL_DEATHS">JH Global new deaths time series</option>
+	    	<option value="JH_GLBL_RECOVER">JH Global recovered cases time series</option>
+	    	<option value="CTP_STATES_DAILY">Covid Tracking Project US states/daily</option>
+	    </select>
+		<br/>
+		<button onclick="createCombined(this,$event)">GO</button> <input type=checkbox name="expireAll" value="1">Expire all existing</checkbox></li>
+	</form>
     </ul>
     </div>
     <!-- built files will be auto injected -->
@@ -63,9 +78,16 @@ function getALLData(){
     });
 }
 
-function createCombined(){
-	    document.body.style.cursor='wait';
+function createCombined(el,$evt){
+	debugger;
+	$evt.stop();
+	$evt.preventDefault();
+    document.body.style.cursor='wait';
     let url ="/cvd/createCombinedData";
+	const f = el.form;
+	url += "?dataSrc=" + f.dataSrc.value;
+	let expireAll = el.form.expireAll;
+	if(expireAll.checked) url += "&expireAll=true";
     $.get(url).then(function(data){
 		let msg;
 		msg = data;

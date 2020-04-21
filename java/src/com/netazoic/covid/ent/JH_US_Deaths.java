@@ -5,31 +5,19 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
+import java.time.LocalDate;
 import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
 
-import com.netazoic.covid.ent.JHTimeSeries.JH_TP;
+import com.netazoic.covid.ent.JH_TimeSeries.JH_TP;
 import com.netazoic.ent.ENTException;
 import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
-public class JH_US_Deaths extends JHTimeSeries {
+public class JH_US_Deaths extends JH_US_TimeSeries {
 	// UID,iso2,iso3,code3,FIPS,Admin2,Province_State,Country_Region,Lat,Long_,Combined_Key,Population,1/22/20
 	
-	public Double UID;
-	public String iso3;
-//	public String code3;
-	public Double FIPS;
-	public String city;  //Admin2
-	public String state;
-	public String country;
-//	private Double lat;
-//	private Double long_;
-	public Integer population;
-	public String date;
-	public Integer ct;
-	public String type;
 	
 	private int IDX_TS_START = 12;
 	
@@ -50,7 +38,7 @@ public class JH_US_Deaths extends JHTimeSeries {
 
 		super();
 		this.dataURL = DATA_URL;
-		this.srcOrg = SRC_ORG.JH;
+		this.srcOrg = SRC_ORG.JH_US;
 		this.tsType = JH_TimeSeriesType.dead;
 		this.type = this.tsType.getCode();
 	}
@@ -77,7 +65,9 @@ public class JH_US_Deaths extends JHTimeSeries {
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
 			Connection con, InputStream is) throws IOException, Exception, SQLException {
-		importUSRecords(rmdObj,ctrObj,IDX_TS_START,logger,savePt,con,is);
+		
+		LocalDate maxDate = getLastUpdateDate(this.srcOrg.code,con);
+		super.importRecords(rmdObj,maxDate,ctrObj,IDX_TS_START,logger,savePt,con,is);
 
 	}
 

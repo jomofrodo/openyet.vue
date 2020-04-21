@@ -25,6 +25,11 @@ export default {
     created(){
         console.log(this.colDefs);
     },
+    watch:{
+        colDefs(newVal){
+            console.log(newVal);
+        }
+    },
     methods:{
         isVisible(col){
             return !col.hidden;

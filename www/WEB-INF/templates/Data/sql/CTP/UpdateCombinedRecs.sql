@@ -34,3 +34,48 @@ WHERE ((combined.state is null))		-- rollup records
 AND combined.countrycode = v1.countrycode
 AND combined.date = v1.date;
 
+-- Updates State records in combined
+
+UPDATE combined
+SET positive = v1.positive,
+	positiveincrease = v1.positiveincrease,
+	negative = v1.negative,
+	negativeincrease = v1.negativeincrease,
+	totaltestresults = v1.totaltestresults,
+	totaltestresultsincrease = v1.totaltestresultsincrease,
+	hospitalized = v1.hospitalized,
+	hospitalizedincrease = v1.hospitalizedincrease
+FROM (SELECT  *,
+	to_date(substring(ctp.datechecked from 1 for 10),'YYYY-MM-DD') as date
+	FROM ctp_statesdaily ctp) v1
+	WHERE  v1.state = combined.statecode
+	AND combined.county = null
+	AND v1.date = combined.date;
+	
+-- Add confirmed data to State rollups from JH
+
+UPDATE combined
+SET confirmed = ust.confirmed
+FROM (SELECT state,
+	to_date(ust.date,'mm/dd/yy') as date,
+    SUM(ct) as confirmed
+    FROM jh_us_timeseries ust
+    WHERE type = 'C'
+    GROUP BY date,state)ust
+    
+WHERE combined.date = ust.date
+AND combined.state = ust.state
+AND combined.county is null;
+
+UPDATE combined
+SET confirmed = ust.death
+FROM (SELECT state,
+	to_date(ust.date,'mm/dd/yy') as date,
+    SUM(ct) as death
+    FROM jh_us_timeseries ust
+    WHERE type = 'D'
+    GROUP BY date,state)ust
+    
+WHERE combined.date = ust.date
+AND combined.state = ust.state
+AND combined.county is null;

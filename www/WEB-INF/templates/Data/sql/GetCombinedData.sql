@@ -1,4 +1,4 @@
-SELECT city,
+SELECT county,
 		state,
 		state.ansi as statecode,
 		country,
@@ -27,7 +27,7 @@ SELECT city,
 AND (state is null)
 {{/unless}}
 {{#unless cities}}
-AND (city is null)
+AND (county is null)
 {{/unless}}
 
 {{#if countrycode}}
@@ -45,11 +45,11 @@ AND ((combined.countrycode LIKE '{{filterKey}}')
 	 OR (state.ansi LIKE '{{filterKey}}')
 	 {{/if}}
 	 {{#if cities}}
-	 OR (city LIKE '{{filterKey}}%')
+	 OR (county LIKE '{{filterKey}}%')
 	 {{/if}}
 	 )
 {{/if}}
-ORDER BY country, state, dateSort DESC, city, sourcecode
+ORDER BY country, state, dateSort DESC, county, sourcecode
 {{#if limit}}
 LIMIT {{limit}}
 {{/if}}

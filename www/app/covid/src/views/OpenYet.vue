@@ -2,7 +2,8 @@
   <div id="app">
     <div id="asyncticator-mount"></div>
     <div>
-      <h3>Combined Data Grid</h3>
+      <h3>Open Yet?</h3>
+      <p>Are we open yet?  The U.S. Federal government has come out with guidelines for determining when a region (State)
     </div>
     <div id="div-controls">
       <div class="control" style="width:20rem" id="cc">
@@ -16,20 +17,6 @@
         ></vue-select>
       </div>
 
-      <div class="control" style="width:20rem" id="sc" :class="{disabled:!states.length}">
-        <i class="fa-check-square" :class="{fas:flgState, 'far':!flgState}" @click="toggleState" />
-        <vue-select
-          name="State-Selector"
-          :disabled="states.length == 0"
-          :options="states"
-          v-model="filter.state"
-          placeholder="-- State --"
-          label="name"
-          class="vs__search"
-          :class="{disabled:!flgState}"
-          style="width:100%"
-        ></vue-select>
-      </div>
       <div class="control">
         <column-selector :colDefs="colDefs" title="Column Selector" />
         <label>Column Selector</label>
@@ -43,12 +30,6 @@
       :pDefaultRec="defaultRec"
       :p-filter="searchQuery"
       :readOnly="flgReadOnly"
-      @update="onUpdateGridVal"
-      @saveGrid="flgDirty=false"
-      @noteUpdate="flgDirty=true"
-      @noteDelete="flgDirty=true"
-      @noteAdd="flgDirty=true"
-      @reset="flgDirty=false"
     />
 
     <!-- Alert Dialog -->
@@ -66,9 +47,6 @@
 
 <script>
 import Vue from "vue";
-// import { njsGrid } from "@netazoic/njs-grid";  // as an npm package
-// import { njsGrid } from "./njsGrid";  // locally compiled module
-// import { njsGrid } from "./njsGrid/src/index.js"; // as a git subModule
 import njsGrid from "../njsGrid/src/njsGrid.vue"; // local src
 import joModal from "../components/joModal.vue";
 import ColumnSelector from "../components/ColumnSelector.vue";
@@ -82,11 +60,10 @@ import * as util from "../lib/util.js";
 import "../css/modal.css";
 import "../css/grid.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
-let rateCodes = [];
 const defaultCell = { width: 200, type: "text" };
 
 export default {
-  name: "CombinedGrid",
+  name: "OpenYet",
   components: {
     "njs-grid": njsGrid,
     joModal,
@@ -108,7 +85,7 @@ export default {
       flgReadOnly: true,
       gridDefaults: [],
       gridOptions: [],
-      gridCode: "COMBINED",
+      gridCode: "OPEN_YET",
       flgDebug: true,
       flgDirty: false,
       dlgs: {
@@ -116,7 +93,7 @@ export default {
       },
       urlCountries: "cvd/getData/countries",
       urlStates: "cvd/getData/states",
-      urlData: "cvd/getData/combined?limit=1000",
+      urlData: "cvd/getData/openyet?limit=1000",
       reloadIdx: 1,
       alertMsg: "",
       infoMsg: "msg"
@@ -133,7 +110,6 @@ export default {
     dataURL() {
       let url = this.urlData;
       // check if state column is displayed
-
       if (this.flgState) url += "&states=true";
       if (this.flgCity) url += "&cities=true";
       // Add a country if selected
@@ -226,9 +202,7 @@ export default {
           if (!c.width) Vue.set(c, "width", defaultCell.width);
           if (!c.type) Vue.set(c, "type", defaultCell.type);
         }
-        if (!c.required && !c.headerClasses && c.editor !== null)
-          Vue.set(c, "headerClasses", "optional");
-        //Set 'isVisible' flags
+        if (!c.hidden) Vue.set(c, "hidden", false);
         Vue.set(c, "isVisible", !c.hidden);
       });
     },
@@ -289,11 +263,6 @@ export default {
           .catch(err => alert(err));
       }
     },
-    onUpdateGridVal(row, col, idx) {
-      if (!col.onUpdate) return null;
-      col.onUpdate(row, col, this.gridDefaults);
-      return 1;
-    },
     showAlert(msg) {
       console.log(msg);
       msg = msg.replace(/\n/g, "<br />");
@@ -306,15 +275,6 @@ export default {
     toggleDialog(dlg) {
       dlg.flg = !dlg.flg;
       //    this.dlgs[dlgID] = !this.dlgs[dlgID];
-    },
-    toggleState() {
-      let idx=0;
-      const colState = this.colDefs.find(function(col,idx) {
-        return col.colName == "state";
-      });
-      const newVal = !colState.hidden;
-      colState.hidden = newVal;
-      Vue.set(this.colDefs,idx,colState);
     }
   }
 };

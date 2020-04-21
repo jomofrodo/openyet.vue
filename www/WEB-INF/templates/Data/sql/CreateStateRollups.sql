@@ -1,4 +1,4 @@
--- State totals -- create state rollups where state entries are broken out by city
+-- State totals -- create state rollups where state entries are broken out by county
 
 
 -- SELECT * FROM ctp_statesdaily;
@@ -52,7 +52,7 @@ countrycode
 FROM combined
 WHERE 1=1 -- countrycode = 'USA'
 AND state is not null
-AND city is not null
+AND county is not null
 GROUP BY country, state, date, countrycode, datechecked,sourcecode;
 
 commit;

@@ -5,28 +5,19 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
+import java.time.LocalDate;
 import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
 
 import com.netazoic.covid.Covid19.CVD_TP;
 import com.netazoic.ent.ENTException;
+import com.netazoic.ent.ifDataSrcWrapper;
 import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
-public class JH_US_Confirmed extends JHTimeSeries implements ifDataSrcWrapper{
-	public Double UID;
-	public String iso3;
-//	public String code3;
-	public Double FIPS;
-	public String city;
-	public String state;
-	public String country;
-//	private Double lat;
-//	private Double long_;
-	public String date;
-	public Integer ct;
-	public String type;
+public class JH_US_Confirmed extends JH_US_TimeSeries implements ifDataSrcWrapper{
+
 	private int IDX_TS_START = 11;
 	
 	private static String DATA_URL = "https://raw.githubusercontent.com/CSSEGISandData/"
@@ -62,7 +53,7 @@ public class JH_US_Confirmed extends JHTimeSeries implements ifDataSrcWrapper{
 
 		super();
 		this.dataURL = DATA_URL;
-		this.srcOrg = SRC_ORG.JH;
+		this.srcOrg = SRC_ORG.JH_US;
 		this.tsType = JH_TimeSeriesType.confirmed;
 		this.type = this.tsType.getCode();
 	}
@@ -84,10 +75,17 @@ public class JH_US_Confirmed extends JHTimeSeries implements ifDataSrcWrapper{
 		return ctCreated;
 	}
 	
+	public Integer expireCombinedRecs() throws SQLException {
+		//Expire all records of this type in the combined records table
+//		String q = "DELETE FROM covid.combined WHERE sourcecode = '" + this.srcOrg.code + "'";
+//		return SQLUtil.execSQL(q, con);
+		return 0;
+	}
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
 			Connection con, InputStream is) throws IOException, Exception, SQLException {
-		importUSRecords(rmdObj,ctrObj,IDX_TS_START,logger,savePt,con,is);
+		LocalDate maxDate = getLastUpdateDate(this.srcOrg.code,con);
+		super.importRecords(rmdObj,maxDate,ctrObj,IDX_TS_START,logger,savePt,con,is);
 
 	}
 
