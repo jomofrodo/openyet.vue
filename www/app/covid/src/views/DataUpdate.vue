@@ -9,14 +9,14 @@
           <label>Retrieve remote data</label>
           <select name="dataSrc" v-model="dataSrc">
             <option value>-- Select Data Source --</option>
-            <option value="JH_GLBL_CONF:JH_GLBL_DEATHS:JH_GLBL_RECOVER">All JH Global Data (Confirmed, Deaths, Recovered)</option>
+            <option value="JH_GLOBAL_CONF:JH_GLOBAL_DEATHS:JH_GLOBAL_RECOVER">All JH Global Data (Confirmed, Deaths, Recovered)</option>
             <option value="JH_US_CONF:JH_US_DEATHS">All JH US Data (Confirmed, Deaths)</option>
             <option value="CTP_STATES_DAILY">Get Covid Tracking Project US states/daily</option>
             <option value="JH_US_CONF">Get JH US confirmed cases time series</option>
             <option value="JH_US_DEATHS">Get JH US new deaths time series</option>
-            <option value="JH_GLBL_CONF">Get JH Global confirmed cases time series</option>
-            <option value="JH_GLBL_DEATHS">Get JH Global new deaths time series</option>
-            <option value="JH_GLBL_RECOVER">Get JH Global recovered cases time series</option>
+            <option value="JH_GLOBAL_CONF">Get JH Global confirmed cases time series</option>
+            <option value="JH_GLOBAL_DEATHS">Get JH Global new deaths time series</option>
+            <option value="JH_GLOBAL_RECOVER">Get JH Global recovered cases time series</option>
 
           </select>
           <br/>
@@ -34,12 +34,12 @@
         <br />
         <select name="dataSrc" v-model="dataSrcCombined">
           <option value>-- Select Data Source --</option>
-          <option value="JH_GLBL_CONF:JH__US_CONF:CTP_STATES_DAILY">Create for ALL data sources</option>
+          <option value="JH_GLOBAL_CONF:JH_US_CONF:CTP_STATES_DAILY">Create for ALL data sources</option>
           <option value="JH_US_CONF">JH US confirmed cases time series</option>
           <option value="JH_US_DEATHS">JH US new deaths time series</option>
-          <option value="JH_GLBL_CONF">JH Global confirmed cases time series</option>
-          <option value="JH_GLBL_DEATHS">JH Global new deaths time series</option>
-          <option value="JH_GLBL_RECOVER">JH Global recovered cases time series</option>
+          <option value="JH_GLOBAL_CONF">JH Global confirmed cases time series</option>
+          <option value="JH_GLOBAL_DEATHS">JH Global new deaths time series</option>
+          <option value="JH_GLOBAL_RECOVER">JH Global recovered cases time series</option>
           <option value="CTP_STATES_DAILY">Covid Tracking Project US states/daily</option>
         </select>
         <br />

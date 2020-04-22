@@ -3,7 +3,7 @@ const optsPoolCode = [{ value: 'TEST_POOL_A', label: 'TEST_POOL_A' },
 { value: 'TEST_POOL_B', label: 'TEST_POOL_B' }];
 
 export const colDefs = [
-    { colName: "city", header: "City" , hidden:true },
+    { colName: "county", header: "County" , hidden:true },
     { colName: "state", header: "State" , hidden:true },
     { colName: "countrycode", header: "CountryCode", hidden:false },
     { colName: "country", header: "Country", hidden:false  },

@@ -39,8 +39,7 @@ public class JH_Global_TimeSeries extends JH_TimeSeries{
 	@Override
 	public Integer expireCombinedRecs() throws SQLException {
 		//Expire all records of this type in the combined records table
-		String q = "DELETE FROM covid.combined WHERE sourcecode = '" + this.srcOrg.code + "'";
-		q += " AND type = '" + this.type + "'";
+		String q = "DELETE FROM covid.combined WHERE sourcecode = '" + this.dataSrc.getSrcCode() + "'";
 		return SQLUtil.execSQL(q, con);
 	}
 	
@@ -110,6 +109,20 @@ public class JH_Global_TimeSeries extends JH_TimeSeries{
 					logger.error(sql.getMessage());
 					con.rollback(savePt);
 					ctrObj.ctBadRecords.increment();
+					if(ctrObj.ctBadRecords.value > MAX_BAD_RECORDS) {
+						logger.error("Reached MAX_BAD_RECORDS limit, exiting");
+						itr.emptyIterator();
+						return;
+					}
+				}catch(Exception ex) {
+					logger.error(ex.getMessage());
+					con.rollback(savePt);
+					ctrObj.ctBadRecords.increment();
+					if(ctrObj.ctBadRecords.value > MAX_BAD_RECORDS) {
+						logger.error("Reached MAX_BAD_RECORDS limit, exiting");
+						itr.emptyIterator();
+						return;
+					}
 				}
 			}
 			// Commit after processing each row

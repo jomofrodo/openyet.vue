@@ -137,7 +137,7 @@ export default {
     },
     flgCity() {
       const colCity = this.colDefs.find(function(col) {
-        return col.colName == "city";
+        return col.colName == "county";
       });
       return !colCity.hidden;
     },

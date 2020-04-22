@@ -17,4 +17,12 @@ SELECT
 	'CTP_STATES_DAILY' as srcCode,
 	count(datechecked) as ct,
 	max (to_date(substring(datechecked from 1 for 10),'YYYY-MM-DD')) as date
-	FROM ctp_statesdaily;
+	FROM ctp_statesdaily
+	
+UNION
+	
+SELECT
+	'COMBINED' as srcCode,
+	count(date) as ct,
+	max(date) as date
+	FROM combined;

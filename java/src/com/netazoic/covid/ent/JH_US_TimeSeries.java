@@ -15,7 +15,9 @@ import org.apache.logging.log4j.Logger;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.netazoic.covid.Covid19.CVD_DataSrc;
 import com.netazoic.ent.ENTException;
+import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
 public class JH_US_TimeSeries extends JH_TimeSeries {
@@ -68,6 +70,17 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 		// TODO Auto-generated constructor stub
 	}
 	
+	protected LocalDate getLastUpdateDate(String srcCode, Connection con) throws SQLException {
+		// Get the date of the last update
+		// US combined records always have sourcecode 'JH_US_CONF'
+		LocalDate maxDate = null;
+		String q = "SELECT max(to_date(date,'mm/dd/yy')) as maxDate FROM jh_us_timeseries WHERE type = '" + this.tsType.getCode() + "'";
+		String maxDateS = SQLUtil.execSQL(q, "maxDate", con);
+		if(maxDateS==null) maxDate =  LocalDate.parse("1970-01-01");
+		else maxDate = LocalDate.parse(maxDateS);
+		return maxDate;
+	}
+	
 	public void importRecords(ifRemoteDataObj rmdObj, LocalDate maxDate, RemoteDataRecordCtr ctrObj, int idxTS_Start,Logger logger, Savepoint savePt,
 			Connection con, InputStream is) throws IOException, Exception, SQLException {
 		HashMap<String, Object> recMap;
@@ -109,6 +122,7 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 			if(state!=null && state.isEmpty()) state = null;
 			country = row.get(JH_US_Source_Column.Country_Region.name());
 			county = row.get(JH_US_Source_Column.Admin2.name());
+			if(county!=null && county.isEmpty()) county = null;
 			population = row.get(JH_US_Source_Column.Population.name());
 			recMap.put(JH_US_DB_Column.uid.name(), uid);
 			recMap.put(JH_US_DB_Column.county.name(), county);
@@ -129,7 +143,7 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 					dateStr = mo + "/" + day + "/" + yr;
 				}
 				date = LocalDate.parse(dateStr, formatter);
-				if(date.isBefore(maxDate)) continue;
+				if(!date.isAfter(maxDate)) continue;
 				ctStr = row.get(keys[idx]);
 
 				try{
@@ -159,6 +173,11 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 					logger.error(sql.getMessage());
 					con.rollback(savePt);
 					ctrObj.ctBadRecords.increment();
+					if(ctrObj.ctBadRecords.value > MAX_BAD_RECORDS) {
+						logger.error("Reached MAX_BAD_RECORDS limit, exiting");
+						itr.emptyIterator();
+						return;
+					}
 				}catch(Exception ex) {
 					logger.error(ex.getMessage());
 					con.rollback(savePt);

@@ -110,7 +110,7 @@ public class JH_TimeSeries extends rdENT<ifDataSrcWrapper>{
 	@Override
 	public Integer createCombinedRecs() throws Exception {
 		HashMap map = new HashMap();
-		String q =  parseUtil.parseQueryFile(JH_TP.sql_CREATE_COMBINED_RECS.tPath,map);
+		String q =  parseUtil.parseQuery(JH_TP.sql_CREATE_COMBINED_RECS.tPath,map);
 		return SQLUtil.execSQL(q, con);
 	}
 
@@ -133,19 +133,16 @@ public class JH_TimeSeries extends rdENT<ifDataSrcWrapper>{
 	
 	public Integer expireCombinedRecs() throws SQLException {
 		//Expire all records of this type in the combined records table
-//		String q = "DELETE FROM covid.combined WHERE sourcecode = '" + this.srcOrg.code + "'";
-//		q += " AND type = '" + this.tsType.getCode() + "'";
-//		return SQLUtil.execSQL(q, con);
 		return 0;
 	}
 
 	protected LocalDate getLastUpdateDate(String srcCode, Connection con) throws SQLException {
 		// Get the date of the last update
 		LocalDate maxDate = null;
-		String q = "SELECT max(date) as maxDate FROM combined WHERE sourcecode='" + srcCode +"'";
+		String q = "SELECT max(to_date(date,'mm/dd/yy')) as maxDate FROM jh_timeseries WHERE type='" + this.tsType.getCode() +"'";
 		String maxDateS = SQLUtil.execSQL(q, "maxDate", con);
 		if(maxDateS==null) maxDate =  LocalDate.parse("1970-01-01");
-		else LocalDate.parse(maxDateS);
+		else maxDate = LocalDate.parse(maxDateS);
 		return maxDate;
 	}
 

@@ -91,7 +91,7 @@ public class Covid19 extends ServENT {
 	}
 
 	public enum CVD_Param{
-		dataSrc, expireAll, expireExisting, country, state
+		dataSrc, expireAll, expireExisting, country, state, sourceCode, lastUpdate
 	}
 
 	public enum CVD_Route{
@@ -122,15 +122,15 @@ public class Covid19 extends ServENT {
 	}
 
 	public enum CVD_DataSrc  implements ifDataSrc{
-		JH_GLBL_CONF(JH_Global_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series new Confirmed"),
-		JH_GLBL_DEATHS(JH_Global_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series new deaths"),
-		JH_GLBL_RECOVER(JH_Global_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series new recoveries"),
+		JH_GLOBAL_CONF(JH_Global_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series new Confirmed"),
+		JH_GLOBAL_DEATHS(JH_Global_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series new deaths"),
+		JH_GLOBAL_RECOVER(JH_Global_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series new recoveries"),
 		JH_US_CONF(JH_US_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series US new Confirmed"),
 		JH_US_DEATHS(JH_US_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series US new deaths"),
 		//		JH_US_RECOVER(JH_US_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series US new recoveries"),
 		CTP_STATES_DAILY( CTP_Daily.class, DataFmt.JSON,"Covid Tracking Project - States Daily");
 
-		String srcCode;
+		public String srcCode;
 		ifDataType type;
 		DataFmt dataFmt;
 		Class<ifDataSrcWrapper> dswClass;
@@ -175,6 +175,10 @@ public class Covid19 extends ServENT {
 		@Override
 		public DataFmt getFormat() {
 			return this.dataFmt;
+		}
+		@Override
+		public String getSrcCode() {
+			return this.srcCode;
 		}
 
 	}
@@ -507,7 +511,7 @@ public class Covid19 extends ServENT {
 			HashMap<String,Object> map = new HashMap<String, Object>();
 			String tp = CVD_TP.sql_GetRemoteDataStats.tPath;
 			try {
-				String q = parser.parseQueryFile(tp, map);
+				String q = parser.parseQuery(tp, map);
 				RSObj rso = RSObj.getRSObj(q, "datasrccode",con);
 				String json = getJSON(rso);
 				ajaxResponse(json,response);
@@ -531,7 +535,7 @@ public class Covid19 extends ServENT {
 			String[] dataSrcA;
 			String country = (String) request.getAttribute(CVD_Param.country.name());
 			String state = (String) request.getAttribute(CVD_Param.state.name());
-			Boolean flgExpireExisting = false, flgExpireRecords = true;
+			Boolean flgExpireExisting = false;
 			HashMap<String,Object>retMap = new HashMap<String,Object>();
 			RemoteDataRecordCtr ctMap = null;
 			String expireExisting = (String) request.getAttribute(CVD_Param.expireExisting.name());
@@ -542,6 +546,7 @@ public class Covid19 extends ServENT {
 			for(String dsrc : dataSrcA) {
 				CVD_DataSrc src = CVD_DataSrc.valueOf(dsrc);
 				rdENT rdEnt = src.rdEnt;
+				rdEnt.init(con);
 				switch(src.rdEnt.srcOrg) {
 				case JH_G:
 				case JH_US:
@@ -556,7 +561,7 @@ public class Covid19 extends ServENT {
 				}
 				RemoteDataObj rdo = getRDO(rdEnt, con);
 				if(flgExpireExisting) {
-					int ctExpired = rdEnt.expireCombinedRecs();
+					int ctExpired = rdo.expireAllRemoteDataRecords(null);
 					logger.info("Expired " + ctExpired + " existing combined records");
 					//					flgExpireExisting = false;
 				}

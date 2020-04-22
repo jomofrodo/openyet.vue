@@ -52,30 +52,3 @@ FROM (SELECT  *,
 	AND combined.county = null
 	AND v1.date = combined.date;
 	
--- Add confirmed data to State rollups from JH
-
-UPDATE combined
-SET confirmed = ust.confirmed
-FROM (SELECT state,
-	to_date(ust.date,'mm/dd/yy') as date,
-    SUM(ct) as confirmed
-    FROM jh_us_timeseries ust
-    WHERE type = 'C'
-    GROUP BY date,state)ust
-    
-WHERE combined.date = ust.date
-AND combined.state = ust.state
-AND combined.county is null;
-
-UPDATE combined
-SET confirmed = ust.death
-FROM (SELECT state,
-	to_date(ust.date,'mm/dd/yy') as date,
-    SUM(ct) as death
-    FROM jh_us_timeseries ust
-    WHERE type = 'D'
-    GROUP BY date,state)ust
-    
-WHERE combined.date = ust.date
-AND combined.state = ust.state
-AND combined.county is null;

@@ -8,6 +8,7 @@ export const colDefs = [
     { colName: "countrycode", header: "CountryCode", hidden:false },
     { colName: "country", header: "Country", hidden:false  },
     { colName: "confirmed", header: "Confirmed", type:"integer", hidden:false },
+    { colName: "confirmedincrease", header: "Confirmed increase", type:"integer", hidden:false },
     { colName: "positive", header: "positive", title: "positive test", 
         help: "a test for covid19 was administered and came back with a positive (meaning confirming) result", type:"integer", hidden:true },
     { colName: "positiveincrease", header: "+ increase", type:"integer", hidden: true },

@@ -1,12 +1,13 @@
 <template>
     <div>
-        <div >
-            <i class="fa-check-square" :class="{'fas':flgDisplay,'far':!flgDisplay}" @click="toggleDisplay" title="Column Selector" />
+        <div class="selector" >
+            <i class="far" :class="{'fa-check-square':flgDisplay,'fa-square':!flgDisplay}" @click="toggleDisplay" :title="title" > 
+                    <label style="margin-left:10px;">{{label}}</label>:
+            </i>
         </div>
         <div class="small-modal" v-if="flgDisplay">
-            Column Selector:
             <ul>
-                <li v-for="col in colDefs" :key="col.colName">{{col.header}} <input type="checkbox" v-model="col.isVisible" @click="toggleHidden(col)"/></li>
+                <li v-for="col in colDefs" :key="col.colName">{{col.header}} <input type="checkbox" :checked="!(col.hidden)" @click="toggleHidden(col)"/></li>
             </ul>
         </div>
     </div>
@@ -14,7 +15,9 @@
 <script>
 export default {
     name: "ColumnSelector",
-    props: { colDefs: Array
+    props: { colDefs: Array,
+             title: String,
+             label: String
             },
     data: function(){
         return{

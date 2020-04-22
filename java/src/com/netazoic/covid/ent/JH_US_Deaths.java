@@ -10,6 +10,7 @@ import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
 
+import com.netazoic.covid.Covid19.CVD_DataSrc;
 import com.netazoic.covid.ent.JH_TimeSeries.JH_TP;
 import com.netazoic.ent.ENTException;
 import com.netazoic.util.SQLUtil;
@@ -18,6 +19,20 @@ import com.netazoic.util.ifRemoteDataObj;
 public class JH_US_Deaths extends JH_US_TimeSeries {
 	// UID,iso2,iso3,code3,FIPS,Admin2,Province_State,Country_Region,Lat,Long_,Combined_Key,Population,1/22/20
 	
+	// Need to define fields locally for setupNPSStatement
+	public Double UID;
+	public String iso3;
+//	public String code3;
+	public Double FIPS;
+	public String county;  //Admin2
+	public String state;
+	public String country;
+//	private Double lat;
+//	private Double long_;
+	public Integer population;
+	public String date;
+	public Integer ct;
+	public String type;
 	
 	private int IDX_TS_START = 12;
 	
@@ -39,6 +54,7 @@ public class JH_US_Deaths extends JH_US_TimeSeries {
 		super();
 		this.dataURL = DATA_URL;
 		this.srcOrg = SRC_ORG.JH_US;
+		this.dataSrc = CVD_DataSrc.JH_US_DEATHS;
 		this.tsType = JH_TimeSeriesType.dead;
 		this.type = this.tsType.getCode();
 	}
@@ -57,7 +73,7 @@ public class JH_US_Deaths extends JH_US_TimeSeries {
 	@Override
 	public Integer createCombinedRecs() throws Exception {
 		HashMap map = new HashMap();
-		String q =  parseUtil.parseQueryFile(TP.sql_CREATE_COMBINED_RECS.tPath,map);
+		String q =  parseUtil.parseQuery(TP.sql_CREATE_COMBINED_RECS.tPath,map);
 		return SQLUtil.execSQL(q, con);
 	}
 	
@@ -66,7 +82,7 @@ public class JH_US_Deaths extends JH_US_TimeSeries {
 	public void importRecords(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
 			Connection con, InputStream is) throws IOException, Exception, SQLException {
 		
-		LocalDate maxDate = getLastUpdateDate(this.srcOrg.code,con);
+		LocalDate maxDate = getLastUpdateDate(this.dataSrc.getSrcCode(),con);
 		super.importRecords(rmdObj,maxDate,ctrObj,IDX_TS_START,logger,savePt,con,is);
 
 	}

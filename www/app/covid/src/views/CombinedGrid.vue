@@ -17,12 +17,11 @@
       </div>
 
       <div class="control" style="width:20rem" id="sc" :class="{disabled:!states.length}">
-        <i class="fa-check-square" :class="{fas:flgState, 'far':!flgState}" @click="toggleState" />
         <vue-select
           name="State-Selector"
           :disabled="states.length == 0"
           :options="states"
-          v-model="filter.state"
+          v-model="state"
           placeholder="-- State --"
           label="name"
           class="vs__search"
@@ -31,9 +30,8 @@
         ></vue-select>
       </div>
       <div class="control">
-        <column-selector :colDefs="colDefs" title="Column Selector" />
-        <label>Column Selector</label>
-      </div>
+        <column-selector :colDefs="colDefs" label="Column Selector" title="Select columns that will display in the grid" />
+     </div>
     </div>
     <njs-grid
       :gridCode="gridCode"
@@ -100,6 +98,7 @@ export default {
       searchQuery: "",
       colDefs: [],
       countries: [],
+      state: {},
       states: [],
       filter: {
         country: null,
@@ -161,7 +160,7 @@ export default {
     },
     flgCity() {
       const colCity = this.colDefs.find(function(col) {
-        return col.colName == "city";
+        return col.colName == "county";
       });
       return !colCity.hidden;
     },
@@ -178,6 +177,13 @@ export default {
       else {
         this.getStates();
       }
+    },
+    state(newVal){
+      const colState = this.colDefs.find(function(col) {
+        return col.colName == "state";
+      });
+      colState.hidden = newVal == null;
+      this.filter.state = newVal;
     },
     colDefs(newVal) {
       if (!newVal) return;
@@ -312,9 +318,8 @@ export default {
       const colState = this.colDefs.find(function(col,idx) {
         return col.colName == "state";
       });
-      const newVal = !colState.hidden;
-      colState.hidden = newVal;
-      Vue.set(this.colDefs,idx,colState);
+      colState.hidden = (this.filter.state == null);
+      // Vue.set(this.colDefs,idx,colState);
     }
   }
 };

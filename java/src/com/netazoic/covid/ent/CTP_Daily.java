@@ -2,25 +2,19 @@ package com.netazoic.covid.ent;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Savepoint;
-import java.time.LocalDate;
 import java.util.HashMap;
-import java.util.List;
 
 import org.apache.logging.log4j.Logger;
 
-import com.netazoic.covid.ent.JH_TimeSeries.JH_TP;
+import com.netazoic.covid.Covid19.CVD_DataSrc;
 import com.netazoic.ent.ENTException;
 import com.netazoic.ent.ifDataSrc;
 import com.netazoic.ent.if_TP;
 import com.netazoic.ent.rdENT;
-import com.netazoic.ent.rdENT.SRC_ORG;
-import com.netazoic.util.NamedParameterStatement;
 import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
@@ -97,6 +91,7 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 		super();
 		this.dataURL = DATA_URL;
 		this.srcOrg = SRC_ORG.CTP;
+		this.dataSrc = CVD_DataSrc.CTP_STATES_DAILY;
 		initENT();
 		
 	}
@@ -130,7 +125,7 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 		HashMap map = new HashMap();
 		// We don't actually create new combined recs for CTP Daily data - we just update existing records
 //		String q =  parseUtil.parseQueryFile(CTP_TP.sql_CREATE_COMBINED_RECS.tPath,map);
-		String q = parseUtil.parseQueryFile(CTP_TP.sql_UPDATE_COMBINED_RECS.tPath, map);
+		String q = parseUtil.parseQuery(CTP_TP.sql_UPDATE_COMBINED_RECS.tPath, map);
 		return SQLUtil.execSQL(q, con);
 	}
 	
