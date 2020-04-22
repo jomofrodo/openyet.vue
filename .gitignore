@@ -29,3 +29,4 @@ www/app/covid/yarn-error.log
 *.~lock*
 /.gradle/
 build
+covid_db.tgz
