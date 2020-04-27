@@ -3,6 +3,7 @@ package com.netazoic.covid.ent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 import java.time.LocalDate;
@@ -22,30 +23,69 @@ import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
 public class JH_Global_TimeSeries extends JH_TimeSeries{
-	
+
 	public String state;
 	public String country;
-//	private Double lat;
-//	private Double lon;
+	//	private Double lat;
+	//	private Double lon;
 	public String date;
 	public Integer ct;
 	public String type;
 
+	PreparedStatement psDeleteRemoteData;
+
 	public JH_Global_TimeSeries() throws ENTException {
 		super();
-		// TODO Auto-generated constructor stub
+		// ctp = rdEnt.nit.sql_DeleteENT;
+
 	}
-	
+
 	@Override
 	public Integer expireCombinedRecs() throws SQLException {
 		//Expire all records of this type in the combined records table
 		String q = "DELETE FROM covid.combined WHERE sourcecode = '" + this.dataSrc.getSrcCode() + "'";
 		return SQLUtil.execSQL(q, con);
 	}
+
+	@Override
+	public int expireRemoteDataRecords(HashMap<String, Object> recMap) throws SQLException, ENTException {
+		// Clear all existing RemoteData records for queryCode.
+		// deleteRemoteData.setString(1, queryCode);
+		HashMap settings = new HashMap();
+		String ctp = sql_DeleteRemoteData;
+		try {
+			if(ctp!=null) {
+				String q6 = this.parseUtil.parseQuery(ctp, settings);
+				//String q6 = "UPDATE module SET mdactiveto = now()";
+				psDeleteRemoteData = con.prepareStatement(q6);
+			}else {
+				psDeleteRemoteData = setupExpireAllStatement(con);
+			}
+		}catch(Exception ex) {
+			throw new ENTException(ex);
+		}
+		if(psDeleteRemoteData != null) {
+			setExpireAllStatement(psDeleteRemoteData);
+			psDeleteRemoteData.execute();
+			return psDeleteRemoteData.getUpdateCount();
+		}
+		return 0;
+	}
 	
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
 			Connection con, InputStream is) throws IOException, Exception, SQLException {
+		LocalDate maxDate = getLastUpdateDate(this.dataSrc.getSrcCode(),con);
+		importRecords(rmdObj,maxDate,ctrObj,logger,savePt,con,is);
+
+	}
+
+	@Override
+	public void importRecords(ifRemoteDataObj rmdObj,  LocalDate maxDate, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
+			Connection con, InputStream is) throws IOException, Exception, SQLException {
+
+		//First expire existing records
+		if(maxDate == null || maxDate.equals(LocalDate.parse("1970-01-01"))) this.expireRemoteDataRecords(null);
 		// Import Global records
 		HashMap<String, Object> recMap;
 		boolean flgCreate;
@@ -90,6 +130,7 @@ public class JH_Global_TimeSeries extends JH_TimeSeries{
 					dateStr = mo + "/" + day + "/" + yr;
 				}
 				date = LocalDate.parse(dateStr, formatter);
+				if(!date.isAfter(maxDate)) continue;
 				ctStr = row.get(keys[idx]);
 				ct = Integer.parseInt(ctStr);
 				recMap.put(JH_Column.date.name(), dateStr);

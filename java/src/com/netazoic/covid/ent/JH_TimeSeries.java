@@ -207,6 +207,15 @@ public class JH_TimeSeries extends rdENT<ifDataSrcWrapper>{
 	}
 
 
+
+	@Override
+	public void importRecords(ifRemoteDataObj rmdObj, LocalDate maxDate, RemoteDataRecordCtr ctrObj, Logger logger,
+			Savepoint savePt, Connection con, InputStream is) throws IOException, Exception, SQLException {
+		// TODO Auto-generated method stub
+		
+	}
+
+
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
 			Connection con, InputStream is) throws IOException, Exception, SQLException {

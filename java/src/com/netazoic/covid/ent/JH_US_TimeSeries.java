@@ -70,6 +70,16 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 		// TODO Auto-generated constructor stub
 	}
 	
+	protected LocalDate getLastCombinedUpdate(String srcCode, Connection con) throws SQLException {
+		// Get the date of the last update
+		// US combined records always have sourcecode 'JH_US_CONF'
+		LocalDate maxDate = null;
+		String q = "SELECT max(date) as maxDate FROM combined WHERE sourcecode = '" + this.dataSrc.getSrcCode() + "'";
+		String maxDateS = SQLUtil.execSQL(q, "maxDate", con);
+		if(maxDateS==null) maxDate =  LocalDate.parse("1970-01-01");
+		else maxDate = LocalDate.parse(maxDateS);
+		return maxDate;
+	}
 	protected LocalDate getLastUpdateDate(String srcCode, Connection con) throws SQLException {
 		// Get the date of the last update
 		// US combined records always have sourcecode 'JH_US_CONF'

@@ -49,6 +49,6 @@ FROM (SELECT  *,
 	to_date(substring(ctp.datechecked from 1 for 10),'YYYY-MM-DD') as date
 	FROM ctp_statesdaily ctp) v1
 	WHERE  v1.state = combined.statecode
-	AND combined.county = null
+	AND combined.county is null
 	AND v1.date = combined.date;
 	

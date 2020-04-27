@@ -6,15 +6,9 @@ Vue.use(Router);
 export default new Router({
   routes: [
     {
-      path: "/",
-      component: () => import("@/views/Home"),
-      children: [
-        {
-          path: "",
-          name: "home",
-          component: () => import("@/views/HomeGlobal")
-        }
-      ]
+      path: "/home",
+      name: "home",
+      component: () => import("@/views/OpenYet")
     },
     {
       path: "/nations/static",

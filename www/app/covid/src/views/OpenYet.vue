@@ -3,34 +3,42 @@
     <div id="asyncticator-mount"></div>
     <div>
       <h3>Open Yet?</h3>
-      <p>Are we open yet?  The U.S. Federal government has come out with guidelines for determining when a region (State)
+      <p>Are we open yet?  The U.S. Federal government has come out with guidelines for determining when a region (State)</p>
     </div>
     <div id="div-controls">
-      <div class="control" style="width:20rem" id="cc">
-        <vue-select
-          :options="countries"
-          v-model="filter.country"
-          placeholder="-- Country --"
-          label="name"
-          class="vs__search"
-          style="width:100%"
-        ></vue-select>
+          <div class="control" style="width:20rem" id="cc">
+            <vue-select
+              :options="countries"
+              v-model="filter.country"
+              placeholder="-- Country --"
+              label="name"
+              class="vs__search"
+              style="width:100%"
+            ></vue-select>
+          </div>
+          <div v-if="flgState" class="control" style="width:20rem" id="sc" :class="{disabled:!states.length}">
+          <vue-select
+            name="State-Selector"
+            :disabled="states.length == 0"
+            :options="states"
+            v-model="state"
+            placeholder="-- State --"
+            label="name"
+            class="vs__search"
+            :class="{disabled:!flgState}"
+            style="width:100%" >
+          </vue-select>
+        </div>
       </div>
-
-      <div class="control">
-        <column-selector :colDefs="colDefs" title="Column Selector" />
-        <label>Column Selector</label>
-      </div>
-    </div>
-    <njs-grid
-      :gridCode="gridCode"
-      :gridID="gridCode"
-      :colDefs="colDefs"
-      :dataURL="dataURL"
-      :pDefaultRec="defaultRec"
-      :p-filter="searchQuery"
-      :readOnly="flgReadOnly"
-    />
+      <njs-grid
+          :gridCode="gridCode"
+          :gridID="gridCode"
+          :colDefs="colDefs"
+          :dataURL="dataURL"
+          :pDefaultRec="defaultRec"
+          :p-filter="searchQuery"
+          :readOnly="flgReadOnly"
+        />
 
     <!-- Alert Dialog -->
     <jo-modal
@@ -65,15 +73,15 @@ const defaultCell = { width: 200, type: "text" };
 export default {
   name: "OpenYet",
   components: {
-    "njs-grid": njsGrid,
     joModal,
-    "column-selector": ColumnSelector,
-    "vue-select": vueSelect
+    njsGrid,
+    vueSelect
   },
   props: [],
   data: function() {
     return {
-      country: "",
+      country: {},
+      state: {name:'-- select a state --'},
       searchQuery: "",
       colDefs: [],
       countries: [],
@@ -93,7 +101,7 @@ export default {
       },
       urlCountries: "cvd/getData/countries",
       urlStates: "cvd/getData/states",
-      urlData: "cvd/getData/openyet?limit=1000",
+      urlData: "cvd/getData/getOpenYet?limit=1000",
       reloadIdx: 1,
       alertMsg: "",
       infoMsg: "msg"
@@ -111,7 +119,7 @@ export default {
       let url = this.urlData;
       // check if state column is displayed
       if (this.flgState) url += "&states=true";
-      if (this.flgCity) url += "&cities=true";
+      if (this.flgCounty) url += "&cities=true";
       // Add a country if selected
       if (this.filter.country) {
         url += "&countrycode=" + this.filter.country.countrycode;
@@ -135,20 +143,23 @@ export default {
 
       return rec;
     },
-    flgCity() {
-      const colCity = this.colDefs.find(function(col) {
+    flgCounty() {
+      const colCounty = this.colDefs.find(function(col) {
         return col.colName == "county";
       });
-      return !colCity.hidden;
+      return !colCounty.hidden;
     },
     flgState() {
       const colState = this.colDefs.find(function(col) {
-        return col.colName == "state";
+        return col.colName == "statecode";
       });
-      return !colState.hidden;
+      return !colState.hidden && this.states.length > 0;
     }
   },
   watch: {
+    state(newVal){
+      return newVal;
+    },
     statesURL(newVal) {
       if (!newVal) this.filter.state = null;
       else {
@@ -322,9 +333,9 @@ div#upload-form div.div-buttons {
 }
 .fade2-enter-active,
 .fade2-leave-active {
-  transition: opacity 0.5s;
+  transition: opaCounty 0.5s;
 }
 .fade2-enter, .fade2-leave-to /* .fade-leave-active below version 2.1.8 */ {
-  opacity: 0;
+  opaCounty: 0;
 }
 </style>

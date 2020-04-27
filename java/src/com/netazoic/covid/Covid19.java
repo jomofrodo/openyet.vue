@@ -34,6 +34,7 @@ import com.netazoic.covid.ent.JH_Global_Recovered;
 import com.netazoic.covid.ent.JH_US_Confirmed;
 import com.netazoic.covid.ent.JH_US_Deaths;
 import com.netazoic.covid.ent.ifDataType;
+import com.netazoic.ent.ENTException;
 import com.netazoic.ent.RouteAction;
 import com.netazoic.ent.ServENT;
 import com.netazoic.ent.ifDataSrc;
@@ -67,13 +68,15 @@ public class Covid19 extends ServENT {
 		Home("/Home/Home.hbs","Main home page"),
 		RetrieveData("/Data/RetrieveData.hbs", "Retrieve Data main page"),
 		READ_ME("README.md","Todos/Redux Read Me"), 
-		sql_GetCombinedData("/Data/sql/GetCombinedData.sql", "Get combined covid19 data"),
-		sql_UpdateCombinedCountryCodes("/Data/sql/UpdateCombinedCountryCodes.sql", "Update country codes in combined"),
+		sql_GetCombinedData("/Data/sql/Combined/GetCombinedData.sql", "Get combined covid19 data"),
+		sql_UpdateCombinedCountryCodes("/Data/sql/Combined/UpdateCombinedCountryCodes.sql", "Update country codes in combined"),
+		sql_CreateCombinedIncreaseStats("/Data/sql/Combined/CreateIncreaseStats.sql", "Create values for confirmed increase etc"),
 		sql_CreateCountryRollups("/Data/sql/CreateCountryRollups.sql","Create summary entries for countries that are broken out by state"),
 		sql_CreateStateRollups("/Data/sql/CreateStateRollups.sql","Create summary entries for states that are broken out by county"),
 		sql_GetCountries("/Data/sql/GetCountryList.sql","Select list of countries with countrycodes"), 
+	    sql_GetOpenYetData("/Data/sql/OpenYet/GetOpenYet.sql","Get data for the Open Yet page"),
 		sql_GetStates("/Data/sql/GetStateList.sql","Select list of state names/codes"),
-		sql_UpdateCombinedStateCodes("/Data/sql/UpdateCombinedStateCodes.sql", "Update state codes to ANSI for US entries"), 
+		sql_UpdateCombinedStateCodes("/Data/sql/Combined/UpdateCombinedStateCodes.sql", "Update state codes to ANSI for US entries"), 
 		sql_GetRemoteDataStats("/Data/sql/GetRemoteDataStats.sql","Get stats on all remote data tables"),
 		;
 		//Why store template path and description into variables?
@@ -100,6 +103,7 @@ public class Covid19 extends ServENT {
 		retrieveALLData("/cvd/retrieveALLData","Retrieve all remote data"),
 		createCombinedData("/cvd/createCombinedData", "Create combined data recs"),
 		getCountryData("/cvd/getData/countries", "Get country table"),
+		getOpenYet("/cvd/getData/getOpenYet","Get data for the 'Open Yet?' page"),
 		getStateData("/cvd/getData/states","Get state table"),
 		getCombinedData("/cvd/getData/combined", "Get combined covid19 data"),
 		remoteDataStats("/cvd/remoteDataStats", "Get stats about remote data already retrieved")
@@ -158,19 +162,31 @@ public class Covid19 extends ServENT {
 			this.dataFmt = f;
 			this.type = t;
 			this.desc = d;
+
+		}
+
+		public rdENT getEnt() throws ENTException {
+			if(this.rdEnt!=null) return this.rdEnt;
 			try {
-				this.rdEnt = (rdENT) cl.newInstance();
+				this.rdEnt = (rdENT) this.dswClass.newInstance();
+				return this.rdEnt;
 			} catch (InstantiationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				throw new ENTException(e);
 			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				throw new ENTException(e);
 			}
 		}
 
 		public String getURL() {
 			return this.rdEnt.getDataURL();
+		}
+
+		static CVD_DataSrc getSrc(String tgt) {
+			CVD_DataSrc dsrc;
+			for (CVD_DataSrc src: CVD_DataSrc.values()) {
+				if(src.name().equals(tgt)) return src;
+			}
+			return null;
 		}
 		@Override
 		public DataFmt getFormat() {
@@ -201,6 +217,7 @@ public class Covid19 extends ServENT {
 		routeMap.put(CVD_Route.getCountryData.route, getData);
 		routeMap.put(CVD_Route.getStateData.route, getData);
 		routeMap.put(CVD_Route.getCombinedData.route, getData);
+		routeMap.put(CVD_Route.getOpenYet.route, getData);
 		routeMap.put(CVD_Route.remoteDataStats.route, new RemoteDataStats());
 		routeMap.put(CVD_Route.createCombinedData.route, new CreateCombinedDataHdlr());
 
@@ -475,6 +492,10 @@ public class Covid19 extends ServENT {
 					int ct = rs.getInt(1);
 					rso.numRows = ct;
 					break;
+				case getOpenYet:
+					rso = getOpenYetData(requestMap,con);
+					break;
+					
 				default:
 					throw new Exception("Could not determine the requested data");
 				}
@@ -487,6 +508,13 @@ public class Covid19 extends ServENT {
 			}finally {
 				if(stat!=null)try {stat.close(); stat = null;}catch(Exception ex) {}
 			}
+		}
+
+		private RSObj getOpenYetData(HashMap<String, Object> requestMap, Connection con) throws Exception {
+			String tp = CVD_TP.sql_GetOpenYetData.tPath;
+			String q = parseQuery(tp,requestMap);
+			RSObj rso = RSObj.getRSObj(q, "countrycode", con);
+			return rso;
 		}
 	}
 
@@ -544,8 +572,8 @@ public class Covid19 extends ServENT {
 			dataSrcA = dataSrc.split(":");
 
 			for(String dsrc : dataSrcA) {
-				CVD_DataSrc src = CVD_DataSrc.valueOf(dsrc);
-				rdENT rdEnt = src.rdEnt;
+				CVD_DataSrc src = CVD_DataSrc.getSrc(dsrc);
+				rdENT rdEnt = src.getEnt();
 				rdEnt.init(con);
 				switch(src.rdEnt.srcOrg) {
 				case JH_G:
@@ -641,7 +669,8 @@ public class Covid19 extends ServENT {
 			//			CVD_DataSrc[] dataSrcs = { CVD_DataSrc.JH_GLBL_CONF};
 			try {
 				for(String dsrc : dataSrcs) {
-					CVD_DataSrc src = CVD_DataSrc.valueOf(dsrc);
+					CVD_DataSrc src = CVD_DataSrc.getSrc(dsrc);
+					rdENT rdEnt = src.getEnt();
 					srcCode = mapSrcs.get(src.srcCode);
 					if(srcCode==null) mapSrcs.put(src.srcCode, src.srcCode);
 					RemoteDataObj rdo = getRDO(src.rdEnt,con);
@@ -658,6 +687,9 @@ public class Covid19 extends ServENT {
 
 				}
 
+				logger.info("Creating increase stats");
+				createIncreaseStats(con);
+
 				ctCreated = getCombinedRecordCount(con);
 				logger.info("Created " + ctTotalCreated + " total new combined records");
 				map.put("all", "done");
@@ -669,6 +701,13 @@ public class Covid19 extends ServENT {
 				ajaxError(msg, ex, response);
 				logger.error(msg);
 			}
+		}
+
+		private Integer createIncreaseStats(Connection con) throws Exception {
+			String tp = CVD_TP.sql_CreateCombinedIncreaseStats.tPath;
+			String q = parseQuery(tp);
+			Integer ct = SQLUtil.execSQL(q, con);
+			return ct;
 		}
 
 		private int getCombinedRecordCount(Connection con) throws SQLException {
