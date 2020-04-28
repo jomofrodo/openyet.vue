@@ -3,42 +3,121 @@
     <div id="asyncticator-mount"></div>
     <div>
       <h3>Open Yet?</h3>
-      <p>Are we open yet?  The U.S. Federal government has come out with guidelines for determining when a region (State)</p>
+      <p>Are we open yet? The U.S. Federal government has come out with guidelines for determining when a region (State)</p>
     </div>
     <div id="div-controls">
-          <div class="control" style="width:20rem" id="cc">
-            <vue-select
-              :options="countries"
-              v-model="filter.country"
-              placeholder="-- Country --"
-              label="name"
-              class="vs__search"
-              style="width:100%"
-            ></vue-select>
-          </div>
-          <div v-if="flgState" class="control" style="width:20rem" id="sc" :class="{disabled:!states.length}">
-          <vue-select
-            name="State-Selector"
-            :disabled="states.length == 0"
-            :options="states"
-            v-model="state"
-            placeholder="-- State --"
-            label="name"
-            class="vs__search"
-            :class="{disabled:!flgState}"
-            style="width:100%" >
-          </vue-select>
+      <div class="control" style="width:20rem" id="cc">
+        <vue-select
+          :options="countries"
+          v-model="filter.country"
+          placeholder="-- Country --"
+          label="name"
+          class="vs__search"
+          style="width:100%"
+        ></vue-select>
+      </div>
+      <div
+        v-if="flgState"
+        class="control"
+        style="width:20rem"
+        id="sc"
+        :class="{disabled:!states.length}"
+      >
+        <vue-select
+          name="State-Selector"
+          :disabled="states.length == 0"
+          :options="states"
+          v-model="state"
+          placeholder="-- State --"
+          label="name"
+          class="vs__search"
+          :class="{disabled:!flgState}"
+          style="width:100%"
+        ></vue-select>
+      </div>
+      <div
+        v-if="filter.state"
+        class="control"
+        style="width:20rem"
+        id="sc"
+        :class="{disabled:!counties.length}"
+      >
+        <vue-select
+          name="County-Selector"
+          :disabled="counties.length == 0"
+          :options="counties"
+          v-model="county"
+          placeholder="-- County --"
+          label="name"
+          class="vs__search"
+          :class="{disabled:!counties.length}"
+          style="width:100%"
+        ></vue-select>
+      </div>
+    </div>
+    <div id="open-yet-main" v-if="oyStatus.overallStatus">
+      <div id="main-status" class="flex-main">
+        <div>
+          <label>Country:</label>
+          {{ country.name }}
+        </div>
+        <div v-if="state.statecode">
+          <label>State:</label>
+          {{ state.name }}
+        </div>
+        <div v-if="county.value">
+          <label>County:</label>
+          {{ county.name }}
+        </div>
+        <div>
+          <label>Status:</label>
+          <div
+            id="status-report"
+            class="status"
+            :class="oyStatus.overallStatus.code"
+          >{{oyStatus.overallStatus.name}}</div>
         </div>
       </div>
-      <njs-grid
-          :gridCode="gridCode"
-          :gridID="gridCode"
-          :colDefs="colDefs"
-          :dataURL="dataURL"
-          :pDefaultRec="defaultRec"
-          :p-filter="searchQuery"
-          :readOnly="flgReadOnly"
-        />
+      <div id="open-yet-breakdown" class="flex-main">
+        <h4>2 Week Trend</h4>
+        <b-tabs content-class="mt-3">
+          <b-tab title="summary" active>
+            <div>
+              <table class="status-detail">
+                <tr>
+                  <th class="status-detail">Confirmed</th>
+                  <td  class="status-detail" :class="oyStatus.confStatus.code">{{oyStatus.confTrend}}%</td>
+                </tr>
+                <tr>
+                  <th class='status-detail'>% Positive</th>
+                  <td class="status-detail" :class="oyStatus.ppositiveStatus.code">{{oyStatus.ppositiveTrend}}%</td>
+                </tr>
+                <tr>
+                  <th class="status-detail">Deaths</th>
+                  <td class="status-detail" :class="oyStatus.deathsStatus.code">{{oyStatus.deathsTrend}}%</td>
+                </tr>
+              </table>
+            </div>
+          </b-tab>
+          <b-tab title="detail">
+            <open-yet-detail :oyRec="oyRec"/>
+          </b-tab>
+          <b-tab title="graph">
+            <open-yet-graph :oyRec="oyRec"/>
+          </b-tab>
+        </b-tabs>
+      </div>
+    </div>
+ 
+    <njs-grid
+      :gridCode="gridCode"
+      :gridID="gridCode"
+      :colDefs="colDefs"
+      :dataURL="dataURL"
+      :pDefaultRec="defaultRec"
+      :p-filter="searchQuery"
+      :readOnly="flgReadOnly"
+    />
 
     <!-- Alert Dialog -->
     <jo-modal
@@ -58,6 +137,8 @@ import Vue from "vue";
 import njsGrid from "../njsGrid/src/njsGrid.vue"; // local src
 import joModal from "../components/joModal.vue";
 import ColumnSelector from "../components/ColumnSelector.vue";
+import openYetDetail from "../components/openYetDetail.vue";
+import openYetGraph from "../components/openYetGraph.vue";
 import vueSelect from "vue-select";
 import * as commonOptions from "../grid/common-options";
 import * as util from "../lib/util.js";
@@ -70,25 +151,38 @@ import "../css/grid.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 const defaultCell = { width: 200, type: "text" };
 
+const STATUS = {
+  OPEN: { code: "OPEN", name: "Open" },
+  CLOSED: { code: "CLOSED", name: "Closed" },
+  TOPEN: { code: "TOPEN", name: "Trending Open" }
+};
+
+const USA = { countrycode: "USA", name: "United States" };
+
 export default {
   name: "OpenYet",
   components: {
     joModal,
     njsGrid,
+    openYetDetail,
+    openYetGraph,
     vueSelect
   },
   props: [],
   data: function() {
     return {
-      country: {},
-      state: {name:'-- select a state --'},
+      country: USA,
+      state: { name: "-- select a state --" },
+      county: { name: "-- select county --" },
       searchQuery: "",
       colDefs: [],
       countries: [],
       states: [],
+      counties: [],
       filter: {
-        country: null,
-        state: null
+        country: USA,
+        state: null,
+        county: null
       },
       flgReadOnly: true,
       gridDefaults: [],
@@ -99,8 +193,10 @@ export default {
       dlgs: {
         dlgAlert: { id: "dlgAlert", flg: false }
       },
+      oyRec: {}, //Main 'open yet' data for selection
       urlCountries: "cvd/getData/countries",
       urlStates: "cvd/getData/states",
+      urlCounties: "cvd/getData/counties",
       urlData: "cvd/getData/getOpenYet?limit=1000",
       reloadIdx: 1,
       alertMsg: "",
@@ -113,25 +209,30 @@ export default {
     this.initGrid();
     this.getCountries();
     this.getStates();
+    this.getOpenYet();
   },
   computed: {
     dataURL() {
       let url = this.urlData;
-      // check if state column is displayed
-      if (this.flgState) url += "&states=true";
-      if (this.flgCounty) url += "&cities=true";
-      // Add a country if selected
+      // Add filters
       if (this.filter.country) {
         url += "&countrycode=" + this.filter.country.countrycode;
       }
       if (this.filter.state) {
         url += "&statecode=" + this.filter.state.statecode;
       }
+      if (this.filter.county) {
+        url += "&county=" + this.filter.county.name;
+      }
       return url;
     },
     statesURL() {
       if (!this.filter.country) return null;
       return this.urlStates + "?countrycode=" + this.filter.country.countrycode;
+    },
+    countiesURL() {
+      if (!this.filter.state) return null;
+      return this.urlCounties + "?county=" + this.filter.state.statecode;
     },
     defaultRec() {
       let rec = {};
@@ -153,18 +254,57 @@ export default {
       const colState = this.colDefs.find(function(col) {
         return col.colName == "statecode";
       });
-      return !colState.hidden && this.states.length > 0;
+      return this.states.length > 0;
+    },
+    oyStatus() {
+      // compute status based on data in the oyRec
+      let oyRec = this.oyRec;
+      if (!oyRec || Object.keys(oyRec).length == 0) return {};
+      let oyStat = {};
+      oyStat.confTrend = this.calcTrend(
+        oyRec.confd1,
+        oyRec.confd2,
+        oyRec.confd3,
+        oyRec.conf_base
+      );
+      oyStat.ppositiveTrend = this.calcTrend(
+        oyRec.perc_positived1,
+        oyRec.perc_positived2,
+        oyRec.perc_positived3,
+        oyRec.perc_positive_base
+      );
+      oyStat.deathsTrend = this.calcTrend(
+        oyRec.deathd1,
+        oyRec.deathd2,
+        oyRec.deathd3,
+        oyRec.death_base
+      );
+
+      oyStat.confStatus = oyStat.confTrend < 0 ? STATUS.OPEN : STATUS.CLOSED;
+      oyStat.ppositiveStatus =
+        oyStat.ppositiveTrend < 0 ? STATUS.OPEN : STATUS.CLOSED;
+      oyStat.deathsStatus =
+        oyStat.deathsTrend < 0 ? STATUS.OPEN : STATUS.CLOSED;
+      let status;
+      if (oyStat.confTrend < 0) status = STATUS.OPEN;
+      else if (oyStat.ppositiveTrend < 0) status = STATUS.OPEN;
+      else if (oyStat.deathsTrend < 0) status = STATUS.OPEN;
+      else status = STATUS.CLOSED;
+
+      oyStat.overallStatus = status;
+      return oyStat;
     }
   },
   watch: {
-    state(newVal){
-      return newVal;
-    },
     statesURL(newVal) {
       if (!newVal) this.filter.state = null;
       else {
         this.getStates();
       }
+    },
+    countiesURL(newVAl) {
+      if (!newVal) this.filter.countrycode = null;
+      else this.getCounties();
     },
     colDefs(newVal) {
       if (!newVal) return;
@@ -191,6 +331,14 @@ export default {
           }
         }
       });
+    },
+    dataURL(newVal) {
+      if (newVal) {
+        this.getOpenYet(newVal);
+      }
+    },
+    oyRec(newVal) {
+      this.convertToNumbers(newVal); // Convert strings to numbers
     }
   },
 
@@ -220,6 +368,32 @@ export default {
     initOpts() {
       const vm = this;
       //NOT IN USE
+    },
+    calcTrend(d1, d2, d3, dbase) {
+      let trend;
+      // if (d3 <= d2 || d3 <= d1) trend = 1;
+      // positive or flat, no evidence of a two week decreasing trend
+      if(false) 1;
+      else {
+        let d3Base = dbase - d3;
+        if (d3Base == 0) {
+          //whatever;
+          d3Base = 1;
+        }
+        let dAvg = (d2 + d1) / 2;
+        trend = dAvg / d3Base; // Average of d2 and d1 divided by dbase - d3 (d3_base)
+      }
+      trend = Math.round(trend * 100)/100;
+      trend = trend * 100; //Convert to %
+     return trend;
+    },
+    convertToNumbers() {
+      //Convert oyRec strings to number vals
+      const oyRec = this.oyRec;
+      Object.keys(oyRec).forEach(k => {
+        let numVal = oyRec[k] - 0;
+        if (numVal != NaN) oyRec[k] = numVal;
+      });
     },
     getColDefs: async vm => {
       // by default, get the columnDefs from local static definition file in /gridcoldefs/<gridCode>.js
@@ -256,6 +430,29 @@ export default {
           .catch(err => alert(err));
       }
     },
+    getCounties() {
+      const vm = this;
+      if (!this.statesURL) return null;
+      const jsonStr = window.localStorage.getItem(
+        this.state.statecode + "-counties.json"
+      );
+      //DEBUG
+      if (false) vm.counties = JSON.parse(jsonStr);
+      else {
+        util
+          .getData(this.countiesURL, vm)
+          .then(rso => {
+            // Write data to local storage'
+            const recs = rso.items;
+            window.localStorage.setItem(
+              vm.state.statecode + "-counties.json",
+              JSON.stringify(recs)
+            );
+            vm.counties = recs;
+          })
+          .catch(err => alert(err));
+      }
+    },
     getStates() {
       const vm = this;
       if (!this.statesURL) return null;
@@ -273,6 +470,12 @@ export default {
           })
           .catch(err => alert(err));
       }
+    },
+    getOpenYet() {
+      const vm = this;
+      util.getData(this.dataURL, vm).then(rso => {
+        vm.oyRec = rso.items[0];
+      });
     },
     showAlert(msg) {
       console.log(msg);
@@ -333,9 +536,45 @@ div#upload-form div.div-buttons {
 }
 .fade2-enter-active,
 .fade2-leave-active {
-  transition: opaCounty 0.5s;
+  transition: opacity 0.5s;
 }
 .fade2-enter, .fade2-leave-to /* .fade-leave-active below version 2.1.8 */ {
-  opaCounty: 0;
+  opacity: 0;
+}
+
+/* open-yet-main */
+div#open-yet-main {
+  display: flex;
+}
+div.flex-main {
+  margin: 30px;
+  padding: 30px;
+}
+div#status-report {
+  font-size: 2em;
+  padding: 20px;
+  margin: 20px;
+  font-weight: bold;
+}
+table.status-detail{
+  border-spacing:10px;
+  border-collapse: separate;
+}
+td.status-detail, th.status-detail {
+  padding:10px;
+
+}
+/*   STATUS classes */
+.OPEN {
+  background-color: green;
+  color: white;
+}
+.CLOSED {
+  background-color: red;
+  color: white;
+}
+.TOPEN {
+  background-color: yellow;
+  color: black;
 }
 </style>

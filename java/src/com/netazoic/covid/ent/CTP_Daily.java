@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
@@ -16,6 +17,8 @@ import com.netazoic.ent.ENTException;
 import com.netazoic.ent.ifDataSrc;
 import com.netazoic.ent.if_TP;
 import com.netazoic.ent.rdENT;
+import com.netazoic.ent.ifDataSrcWrapper.RemoteDataRecordCtr;
+import com.netazoic.util.JsonObjectIterator;
 import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
@@ -94,11 +97,11 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 		this.srcOrg = SRC_ORG.CTP;
 		this.dataSrc = CVD_DataSrc.CTP_STATES_DAILY;
 		initENT();
-		
+
 	}
 
 
-	
+
 	@Override
 	public void setCon(Connection con) {
 		this.con = con;
@@ -114,7 +117,16 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 		super.initENT();
 
 	}
-	
+
+	protected LocalDate getLastUpdateDate(String srcCode, Connection con) throws SQLException {
+		// Get the date of the last update
+		LocalDate maxDate = null;
+		String q = "SELECT max(to_date(substring(datechecked from 1 for 10),'YYYY-MM-DD')) as maxDate FROM ctp_statesdaily";
+		String maxDateS = SQLUtil.execSQL(q, "maxDate", con);
+		if(maxDateS==null) maxDate =  LocalDate.parse("1970-01-01");
+		else maxDate = LocalDate.parse(maxDateS);
+		return maxDate;
+	}
 
 	@Override
 	public String getDataURL() {
@@ -125,11 +137,11 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	public Integer createCombinedRecs() throws Exception {
 		HashMap map = new HashMap();
 		// We don't actually create new combined recs for CTP Daily data - we just update existing records
-//		String q =  parseUtil.parseQueryFile(CTP_TP.sql_CREATE_COMBINED_RECS.tPath,map);
+		//		String q =  parseUtil.parseQueryFile(CTP_TP.sql_CREATE_COMBINED_RECS.tPath,map);
 		String q = parseUtil.parseQuery(CTP_TP.sql_UPDATE_COMBINED_RECS.tPath, map);
 		return SQLUtil.execSQL(q, con);
 	}
-	
+
 
 	@Override
 	public Long createRecord(HashMap<String, Object> paramMap, Connection con) throws ENTException {
@@ -148,19 +160,19 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	@Override
 	public void setInsertStatement(PreparedStatement psInsertRemoteData) throws SQLException {
 		// NOT USED
-		
+
 	}
-	
+
 	@Override
 	public void setSrc(ifDataSrc src) {
 		this.dataSrc = src;
-		
+
 	}
 
 	@Override
 	public ifDataSrc getSrc() {
 		return this.dataSrc;
-	
+
 	}
 
 
@@ -169,7 +181,7 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	@Override
 	public void setExpireAllStatement(PreparedStatement psDeleteRemoteData) throws SQLException {
 		// TODO Auto-generated method stub
-	
+
 	}
 
 
@@ -200,8 +212,9 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
 			Connection con, InputStream is) throws IOException, Exception, SQLException {
-		// NOT USED
-		
+		LocalDate maxDate = getLastUpdateDate(this.dataSrc.getSrcCode(),con);
+		importRecords(rmdObj,maxDate,ctrObj,logger,savePt,con,is);
+
 	}
 
 
@@ -209,9 +222,69 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj, LocalDate maxDate, RemoteDataRecordCtr ctrObj, Logger logger,
 			Savepoint savePt, Connection con, InputStream is) throws IOException, Exception, SQLException {
-		// TODO Auto-generated method stub
-		
+
+		HashMap<String, Object> recMap;
+		boolean flgCreate;
+		JsonObjectIterator jsonItr = new JsonObjectIterator(is);
+		String msgInfo;
+		String dateStr;
+		LocalDate date;
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+		while(jsonItr.hasNext()){
+			ctrObj.ctTotalRecords.increment();
+			recMap = jsonItr.next();
+			dateStr = (String) recMap.get("dateChecked");
+			dateStr = dateStr.substring(0,dateStr.indexOf("T"));
+			date = getDateFromDateStr(dateStr, formatter);
+			if(!date.isAfter(maxDate)) continue;
+			try{
+				flgCreate = rmdObj.createRemoteDataRecord(recMap,con);
+				if(flgCreate) ctrObj.ctNewRecordsCreated.increment();
+				msgInfo = "Processed remote record: " + recMap.toString();
+
+				logger.debug(msgInfo);
+				if(ctrObj.ctTotalRecords.value%100 == 0){
+					logger.info(msgInfo);
+					logger.info(ctrObj.ctTotalRecords.value + " records processed.");
+				}
+				savePt = con.setSavepoint();
+			}catch(Exception ex){
+				ctrObj.ctBadRecords.increment();;
+				logger.error(ex.getMessage());
+				con.rollback(savePt);
+			}
+		}
+		jsonItr.close();
 	}
-		
+
+
+
+	private LocalDate getDateFromDateStr(String dateStr, DateTimeFormatter formatter) {
+		String[] dateParts;
+		String mo;
+		String day;
+		String yr;
+		LocalDate date;
+		try { 
+			date = LocalDate.parse(dateStr);
+			return date;
+		}
+		catch(Exception ex) {
+			// no bueno
+		}
+		dateParts = dateStr.split("-");
+		mo = dateParts[1];
+		day = dateParts[2];
+		yr = dateParts[0];
+		if(mo.length()<2) mo = "0" + mo;
+		if(day.length()<2) day= "0" + day;
+		dateStr = mo + "/" + day + "/" + yr;
+		date = LocalDate.parse(dateStr, formatter);
+		return date;
+	}
+
+
+
 
 }

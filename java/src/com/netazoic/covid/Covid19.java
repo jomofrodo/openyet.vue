@@ -73,6 +73,7 @@ public class Covid19 extends ServENT {
 		sql_CreateCombinedIncreaseStats("/Data/sql/Combined/CreateIncreaseStats.sql", "Create values for confirmed increase etc"),
 		sql_CreateCountryRollups("/Data/sql/CreateCountryRollups.sql","Create summary entries for countries that are broken out by state"),
 		sql_CreateStateRollups("/Data/sql/CreateStateRollups.sql","Create summary entries for states that are broken out by county"),
+		sql_GetCounties("/Data/sql/GetCountyList.sql","Select list of counties for a given state/country"), 
 		sql_GetCountries("/Data/sql/GetCountryList.sql","Select list of countries with countrycodes"), 
 	    sql_GetOpenYetData("/Data/sql/OpenYet/GetOpenYet.sql","Get data for the Open Yet page"),
 		sql_GetStates("/Data/sql/GetStateList.sql","Select list of state names/codes"),
@@ -105,6 +106,7 @@ public class Covid19 extends ServENT {
 		getCountryData("/cvd/getData/countries", "Get country table"),
 		getOpenYet("/cvd/getData/getOpenYet","Get data for the 'Open Yet?' page"),
 		getStateData("/cvd/getData/states","Get state table"),
+		getCountyData("/cvd/getData/counties","Get counties list"),
 		getCombinedData("/cvd/getData/combined", "Get combined covid19 data"),
 		remoteDataStats("/cvd/remoteDataStats", "Get stats about remote data already retrieved")
 		;
@@ -234,78 +236,7 @@ public class Covid19 extends ServENT {
 		return rdo;
 	}
 
-	private Integer importJHData( ifRemoteDataObj rmdObj, MutableInt ctNewRemoteData, MutableInt ctBadRecords,  MutableInt ctRemoteDataRecs,
-			Savepoint savePt, Connection con,
-			InputStream is) throws IOException, Exception, SQLException {
-		HashMap<String, Object> recMap;
-		boolean flgCreate;
-		String state;
-		String country;
-		String dateStr;
-		String ctStr;
-		LocalDate date;
-		Integer ct, ctNew = 0;
-		recMap = new HashMap<String,Object>();
-		Map<String,String> row;
-		String[] dateParts;
-		String mo,day,yr;
-		String msgInfo;
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yy");
-		CsvMapper mapper = new CsvMapper();
-		CsvSchema schema = CsvSchema.emptySchema().withHeader(); // use first row as header; otherwise defaults are fine
-		MappingIterator<Map<String,String>> itr = mapper.readerFor(Map.class)
-				.with(schema)
-				.readValues(is);
-		while (itr.hasNext()) {
-
-			row = itr.next();
-			logger.debug(row.toString());
-			// access by column name, as defined in the header row...
-			Object[] keys =  row.keySet().toArray();
-			state = row.get(keys[0]);
-			country = row.get(keys[1]);
-			recMap.put(JH_Column.state.name(), state);
-			recMap.put(JH_Column.country.name(), country);
-
-			for (int idx = 4; idx< row.size(); idx++) {
-				dateStr = (String) keys[idx];
-				if(dateStr.length()<8) {
-					dateParts = dateStr.split("/");
-					mo = dateParts[0];
-					day = dateParts[1];
-					yr = dateParts[2];
-					if(mo.length()<2) mo = "0" + mo;
-					if(day.length()<2) day= "0" + day;
-					dateStr = mo + "/" + day + "/" + yr;
-				}
-				date = LocalDate.parse(dateStr, formatter);
-				ctStr = row.get(keys[idx]);
-				ct = Integer.parseInt(ctStr);
-				recMap.put(JH_Column.date.name(), dateStr);
-				recMap.put(JH_Column.ct.name(), ct);
-				try {
-					savePt = con.setSavepoint();
-					ctRemoteDataRecs.increment();
-					flgCreate = rmdObj.createRemoteDataRecord(recMap,con);
-					if(flgCreate) ctNewRemoteData.increment();;
-					msgInfo = "Processed remote record: " + recMap.toString();
-
-					logger.info(msgInfo);
-					if(ctRemoteDataRecs.value%100 == 0){
-						logger.warn(ctRemoteDataRecs.value + " records processed.");
-					}
-				}catch(SQLException sql) {
-					logger.error(sql.getMessage());
-					con.rollback(savePt);
-					ctBadRecords.increment();
-				}
-			}
-			// Commit after processing each row
-			// Otherwise the number of locks on the db grows beyond max capacity
-			con.commit();
-		}
-		return ctNewRemoteData.value;
-	}
+	
 
 	private void importJSONData(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt, Connection con, InputStream is)
 			throws SQLException, IOException {
@@ -396,7 +327,7 @@ public class Covid19 extends ServENT {
 				break;
 			case CTP:
 				// Covid Tracking Project json files
-				importJSONData(rmdObj, ctrObj, logger, savePt, con, is);
+				rdent.importRecords(rmdObj, ctrObj, logger, savePt, con, is);
 			}
 			if(dataFmt.equals(DataFmt.CSV)) {
 
@@ -478,6 +409,11 @@ public class Covid19 extends ServENT {
 					tp = CVD_TP.sql_GetStates.tPath;
 					q = parser.parseQuery(tp, requestMap);
 					rso = RSObj.getRSObj(q, "code", con);
+					break;
+				case getCountyData:
+					tp = CVD_TP.sql_GetCountries.tPath;
+					q = parser.parseQuery(tp, requestMap);
+					rso = RSObj.getRSObj(q, "county",con);
 					break;
 				case getCombinedData:
 					tp = CVD_TP.sql_GetCombinedData.tPath;

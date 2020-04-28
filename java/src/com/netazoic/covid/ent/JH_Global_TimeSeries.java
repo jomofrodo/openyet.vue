@@ -39,7 +39,7 @@ public class JH_Global_TimeSeries extends JH_TimeSeries{
 		// ctp = rdEnt.nit.sql_DeleteENT;
 
 	}
-
+	
 	@Override
 	public Integer expireCombinedRecs() throws SQLException {
 		//Expire all records of this type in the combined records table

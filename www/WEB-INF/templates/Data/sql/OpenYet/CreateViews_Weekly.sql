@@ -25,7 +25,6 @@ CREATE VIEW cv_national_weekly AS
   WHERE 1 = 1 
   AND combined.county IS NULL 
   AND combined.state IS NULL
-  AND countrycode = 'USA'
   GROUP BY combined.countrycode,
            combined.statecode,
            combined.county,
