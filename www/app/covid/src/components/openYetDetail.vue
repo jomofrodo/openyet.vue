@@ -3,7 +3,7 @@
     <table class="data-detail">
       <tr>
         <th colspan="2"></th>
-        <th colspan="3">Change during week of</th>
+        <th colspan="3">Change versus prior week during week of</th>
       </tr>
       <tr>
         <th>Measure</th>
@@ -38,12 +38,12 @@
 </template>
 <script>
 import moment from "moment";
+import Vue from "vue";
 
 export default {
   props: ["oyRec"],
   data() {
     return {
-      or: this.oyRec,
       confd1: null,
       confd2: null,
       confd3: null,
@@ -61,11 +61,16 @@ export default {
       week3: null
     };
   },
+  computed: {
+    oy() {
+      return this.oyRec;
+    }
+  },
   created() {
     this.initVars();
   },
   watch: {
-    oyRec(newVal) {
+    oy(newVal) {
       this.initVars();
     }
   },
@@ -75,11 +80,11 @@ export default {
       else if (ct < 0) return "OPEN";
     },
     initVars() {
-      const or = this.or;
+      const oy = this.oy;
       const vm = this;
-      Object.keys(or).forEach(k => {
+      Object.keys(oy).forEach(k => {
         if (vm[k] !== undefined) {
-          vm[k] = or[k];
+          vm[k] = oy[k];
         }
       });
       //Convert timestamps to dates
@@ -101,6 +106,12 @@ table.data-detail td {
   border: 1px solid black;
   padding: 10px;
 }
-td.status.OPEN { background-color: lightgreen; color:black;}
-td.status.CLOSED { background-color: red; color:grey;}
+td.status.OPEN {
+  background-color: lightgreen;
+  color: black;
+}
+td.status.CLOSED {
+  background-color: red;
+  color: grey;
+}
 </style>

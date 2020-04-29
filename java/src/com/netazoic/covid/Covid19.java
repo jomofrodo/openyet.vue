@@ -217,6 +217,7 @@ public class Covid19 extends ServENT {
 		routeMap.put(CVD_Route.retrieveData.route, new RemoteDataHdlr());
 		routeMap.put(CVD_Route.retrieveALLData.route, new RetrieveAllDataHdlr());
 		routeMap.put(CVD_Route.getCountryData.route, getData);
+		routeMap.put(CVD_Route.getCountyData.route, getData);
 		routeMap.put(CVD_Route.getStateData.route, getData);
 		routeMap.put(CVD_Route.getCombinedData.route, getData);
 		routeMap.put(CVD_Route.getOpenYet.route, getData);
@@ -411,7 +412,7 @@ public class Covid19 extends ServENT {
 					rso = RSObj.getRSObj(q, "code", con);
 					break;
 				case getCountyData:
-					tp = CVD_TP.sql_GetCountries.tPath;
+					tp = CVD_TP.sql_GetCounties.tPath;
 					q = parser.parseQuery(tp, requestMap);
 					rso = RSObj.getRSObj(q, "county",con);
 					break;

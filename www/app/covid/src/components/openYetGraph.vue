@@ -1,7 +1,7 @@
 <template>
   <div>
-    <h1>HELLO WORLD</h1>
-    <ve-line :data="chartDataSample"></ve-line>
+    <h3>HELLO WORLD</h3>
+    <ve-line :data="chartData"></ve-line>
   </div>
 </template>
 
@@ -16,15 +16,16 @@ export default {
   data() {
     return {
       or: this.oyRec,
-      chartDataSample: {
-        columns: ["date", "sales"],
+      initData: {
+        columns: ["date", "value"],
         rows: [
-          { date: "1月1日", sales: 123 },
-          { date: "1月2日", sales: 1223 },
-          { date: "1月3日", sales: 2123 },
-          { date: "1月4日", sales: 4123 },
-          { date: "1月5日", sales: 3123 },
-          { date: "1月6日", sales: 7123 }
+          { "Country/Region": "Afghanistan", date: "2020-03-19", value: 22 },
+          { "Country/Region": "Afghanistan", date: "2020-03-18", value: 22 },
+          { "Country/Region": "Afghanistan", date: "2020-03-17", value: 22 },
+          { "Country/Region": "Afghanistan", date: "2020-03-16", value: 21 },
+          { "Country/Region": "Afghanistan", date: "2020-03-15", value: 16 },
+          { "Country/Region": "Afghanistan", date: "2020-03-14", value: 11 },
+          { "Country/Region": "Afghanistan", date: "2020-03-13", value: 7 }
         ]
       },
       cols: ["Date", "Value"],
@@ -35,11 +36,12 @@ export default {
   },
   computed: {
     chartData: function() {
-      let cd = {
-        columns: this.cols,
-        rows: this.heroes
-      };
-      return cd;
+      // let cd = {
+      //   columns: this.cols,
+      //   rows: this.heroes
+      // };
+      // return cd;
+      return this.initData;
     },
     heroes: function() {
       const or = this.or;

@@ -5,7 +5,7 @@ module.exports = {
     publicPath:
         process.env.NODE_ENV === 'production'
             ? '/app/covid/dist/prd'
-            : 'app/covid/dist/dev',
+            : '/app/covid/dist/dev',
     pages: {
         covid: 'src/main.js'
     },

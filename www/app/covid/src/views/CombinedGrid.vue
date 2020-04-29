@@ -94,11 +94,11 @@ export default {
   props: [],
   data: function() {
     return {
-      country: "",
+      country: {name:" -- Select Country --"},
       searchQuery: "",
       colDefs: [],
       countries: [],
-      state: {},
+      state: {name:" -- Select State --"},
       states: [],
       filter: {
         country: null,
@@ -113,9 +113,9 @@ export default {
       dlgs: {
         dlgAlert: { id: "dlgAlert", flg: false }
       },
-      urlCountries: "cvd/getData/countries",
-      urlStates: "cvd/getData/states",
-      urlData: "cvd/getData/combined?limit=1000",
+      urlCountries: "/cvd/getData/countries",
+      urlStates: "/cvd/getData/states",
+      urlData: "/cvd/getData/combined?limit=1000",
       reloadIdx: 1,
       alertMsg: "",
       infoMsg: "msg"

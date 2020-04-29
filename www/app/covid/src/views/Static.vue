@@ -18,9 +18,9 @@ export default {
   components: { VeLine },
   data() {
     return {
-      urlConfirmed: "app/covid/data/time_series-ncov-Confirmed.csv",
-      urlDeaths: "app/covid/data/time_series-ncov-Deaths.csv",
-      urlRecovered: "app/covid/data/time_series-ncov-Recovered.csv",
+      urlConfirmed: "/app/covid/data/time_series-ncov-Confirmed.csv",
+      urlDeaths: "/app/covid/data/time_series-ncov-Deaths.csv",
+      urlRecovered: "/app/covid/data/time_series-ncov-Recovered.csv",
       csvData: [],
       initData: {
         columns: ["date", "value"],

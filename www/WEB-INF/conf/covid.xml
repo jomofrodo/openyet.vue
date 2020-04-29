@@ -5,6 +5,7 @@
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>Covid19</servlet-name>
+		<url-pattern>/</url-pattern>
 		<url-pattern>/cvd</url-pattern>
 		<url-pattern>/cvd/*</url-pattern>
 		<url-pattern>/home</url-pattern>

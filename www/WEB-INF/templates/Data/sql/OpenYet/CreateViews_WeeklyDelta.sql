@@ -56,6 +56,8 @@ DROP VIEW IF EXISTS cv_state_weekly_delta;
 CREATE VIEW cv_state_weekly_delta AS
 
 SELECT w3.countrycode, w3.statecode, w3.county,
+w4.confirmed as conf_base, w4.death as death_base, w4.perc_positive as perc_positive_base,
+thisweek as week0, w1.week as week1, w2.week as week2, w3.week as week3,
 CASE
 	WHEN w0.datect=7 THEN w0.confirmedincrease - w1.confirmedincrease
 	ELSE ROUND(((w0.confirmedincrease/w0.datect)*7),0) - w1.confirmedincrease
@@ -102,7 +104,9 @@ WHERE 1=1;
 DROP VIEW IF EXISTS cv_county_weekly_delta;
 CREATE VIEW cv_county_weekly_delta AS
 
-SELECT w3.countrycode, w3.statecode, w3.county, w4.confirmedincrease as confd_base,
+SELECT w3.countrycode, w3.statecode, w3.county, 
+w4.confirmed as conf_base, w4.death as death_base, w4.perc_positive as perc_positive_base,
+thisweek as week0, w1.week as week1, w2.week as week2, w3.week as week3,
 CASE
 	WHEN w0.datect=7 THEN w0.confirmedincrease - w1.confirmedincrease
 	ELSE ROUND(((w0.confirmedincrease/w0.datect)*7),0) - w1.confirmedincrease

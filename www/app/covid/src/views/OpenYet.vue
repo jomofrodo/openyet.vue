@@ -7,9 +7,10 @@
     </div>
     <div id="div-controls">
       <div class="control" style="width:20rem" id="cc">
+        <label class="control-label">Country:</label>
         <vue-select
           :options="countries"
-          v-model="filter.country"
+          v-model="country"
           placeholder="-- Country --"
           label="name"
           class="vs__search"
@@ -17,58 +18,48 @@
         ></vue-select>
       </div>
       <div
-        v-if="flgState"
+        v-if="flgStates"
         class="control"
         style="width:20rem"
         id="sc"
-        :class="{disabled:!states.length}"
+        :class="{disabled:!flgStates}"
       >
+        <label class="control-label">State:</label>
         <vue-select
           name="State-Selector"
-          :disabled="states.length == 0"
+          :disabled="!flgStates"
           :options="states"
           v-model="state"
           placeholder="-- State --"
           label="name"
           class="vs__search"
-          :class="{disabled:!flgState}"
+          :class="{disabled:!flgStates}"
           style="width:100%"
         ></vue-select>
       </div>
       <div
-        v-if="filter.state"
+        v-if="state && state.statecode"
         class="control"
         style="width:20rem"
         id="sc"
-        :class="{disabled:!counties.length}"
+        :class="{disabled:!flgCounties}"
       >
+        <label class="control-label">County:</label>
         <vue-select
           name="County-Selector"
-          :disabled="counties.length == 0"
+          :disabled="!flgCounties"
           :options="counties"
           v-model="county"
           placeholder="-- County --"
-          label="name"
+          label="county"
           class="vs__search"
-          :class="{disabled:!counties.length}"
+          :class="{disabled:!flgCounties}"
           style="width:100%"
         ></vue-select>
       </div>
     </div>
     <div id="open-yet-main" v-if="oyStatus.overallStatus">
       <div id="main-status" class="flex-main">
-        <div>
-          <label>Country:</label>
-          {{ country.name }}
-        </div>
-        <div v-if="state.statecode">
-          <label>State:</label>
-          {{ state.name }}
-        </div>
-        <div v-if="county.value">
-          <label>County:</label>
-          {{ county.name }}
-        </div>
         <div>
           <label>Status:</label>
           <div
@@ -86,29 +77,38 @@
               <table class="status-detail">
                 <tr>
                   <th class="status-detail">Confirmed</th>
-                  <td  class="status-detail" :class="oyStatus.confStatus.code">{{oyStatus.confTrend}}%</td>
+                  <td
+                    class="status-detail"
+                    :class="oyStatus.confStatus.code"
+                  >{{oyStatus.confTrend}}%</td>
                 </tr>
                 <tr>
-                  <th class='status-detail'>% Positive</th>
-                  <td class="status-detail" :class="oyStatus.ppositiveStatus.code">{{oyStatus.ppositiveTrend}}%</td>
+                  <th class="status-detail">% Positive</th>
+                  <td class="status-detail" :class="oyStatus.ppositiveStatus.code">
+                    {{oyStatus.ppositiveTrend}}
+                    <span v-if="oyStatus.ppositiveTrend != 'n/a'">%</span>
+                  </td>
                 </tr>
                 <tr>
                   <th class="status-detail">Deaths</th>
-                  <td class="status-detail" :class="oyStatus.deathsStatus.code">{{oyStatus.deathsTrend}}%</td>
+                  <td
+                    class="status-detail"
+                    :class="oyStatus.deathsStatus.code"
+                  >{{oyStatus.deathsTrend}}%</td>
                 </tr>
               </table>
             </div>
           </b-tab>
           <b-tab title="detail">
-            <open-yet-detail :oyRec="oyRec"/>
+            <open-yet-detail :oyRec="oyRec" />
           </b-tab>
           <b-tab title="graph">
-            <open-yet-graph :oyRec="oyRec"/>
+            <open-yet-graph :oyRec="oyRec" />
           </b-tab>
         </b-tabs>
       </div>
     </div>
- 
+
     <njs-grid
       :gridCode="gridCode"
       :gridID="gridCode"
@@ -154,7 +154,8 @@ const defaultCell = { width: 200, type: "text" };
 const STATUS = {
   OPEN: { code: "OPEN", name: "Open" },
   CLOSED: { code: "CLOSED", name: "Closed" },
-  TOPEN: { code: "TOPEN", name: "Trending Open" }
+  TOPEN: { code: "TOPEN", name: "Trending Open" },
+  NA: { code: "NA", name: "Not Applicable" }
 };
 
 const USA = { countrycode: "USA", name: "United States" };
@@ -173,17 +174,13 @@ export default {
     return {
       country: USA,
       state: { name: "-- select a state --" },
-      county: { name: "-- select county --" },
+      county: { county: null },
       searchQuery: "",
       colDefs: [],
       countries: [],
       states: [],
       counties: [],
-      filter: {
-        country: USA,
-        state: null,
-        county: null
-      },
+
       flgReadOnly: true,
       gridDefaults: [],
       gridOptions: [],
@@ -215,24 +212,33 @@ export default {
     dataURL() {
       let url = this.urlData;
       // Add filters
-      if (this.filter.country) {
-        url += "&countrycode=" + this.filter.country.countrycode;
+      if (this.country && this.country.countrycode) {
+        url += "&countrycode=" + this.country.countrycode;
       }
-      if (this.filter.state) {
-        url += "&statecode=" + this.filter.state.statecode;
+      if (this.state && this.state.statecode) {
+        url += "&statecode=" + this.state.statecode;
       }
-      if (this.filter.county) {
-        url += "&county=" + this.filter.county.name;
+      if (this.county && this.county.statecode) {
+        url += "&county=" + this.county.county;
       }
       return url;
     },
+    filter() {
+      const vm = this;
+      return {
+        country: vm.country,
+        state: vm.state,
+        county: vm.county
+      };
+    },
     statesURL() {
-      if (!this.filter.country) return null;
-      return this.urlStates + "?countrycode=" + this.filter.country.countrycode;
+      if (!this.country.countrycode) return null;
+      return this.urlStates + "?countrycode=" + this.country.countrycode;
     },
     countiesURL() {
-      if (!this.filter.state) return null;
-      return this.urlCounties + "?county=" + this.filter.state.statecode;
+      if (this.state && this.state.statecode) {
+        return this.urlCounties + "?statecode=" + this.state.statecode;
+      } else return null;
     },
     defaultRec() {
       let rec = {};
@@ -244,13 +250,13 @@ export default {
 
       return rec;
     },
-    flgCounty() {
+    flgCounties() {
       const colCounty = this.colDefs.find(function(col) {
         return col.colName == "county";
       });
-      return !colCounty.hidden;
+      return this.counties && this.counties.length > 0;
     },
-    flgState() {
+    flgStates() {
       const colState = this.colDefs.find(function(col) {
         return col.colName == "statecode";
       });
@@ -280,11 +286,24 @@ export default {
         oyRec.death_base
       );
 
-      oyStat.confStatus = oyStat.confTrend < 0 ? STATUS.OPEN : STATUS.CLOSED;
+      oyStat.confStatus =
+        oyStat.confTrend < 0
+          ? STATUS.OPEN
+          : oyStat.confd2 == "n/a"
+          ? STATUS.NA
+          : STATUS.CLOSED;
       oyStat.ppositiveStatus =
-        oyStat.ppositiveTrend < 0 ? STATUS.OPEN : STATUS.CLOSED;
+        oyStat.ppositiveTrend < 0
+          ? STATUS.OPEN
+          : oyStat.ppositiveTrend == "n/a"
+          ? STATUS.NA
+          : STATUS.CLOSED;
       oyStat.deathsStatus =
-        oyStat.deathsTrend < 0 ? STATUS.OPEN : STATUS.CLOSED;
+        oyStat.deathsTrend < 0
+          ? STATUS.OPEN
+          : oyStat.deathsTrend == "n/a"
+          ? STATUS.NA
+          : STATUS.CLOSED;
       let status;
       if (oyStat.confTrend < 0) status = STATUS.OPEN;
       else if (oyStat.ppositiveTrend < 0) status = STATUS.OPEN;
@@ -296,14 +315,17 @@ export default {
     }
   },
   watch: {
+    state(newVal) {
+      this.county = {};
+    },
     statesURL(newVal) {
-      if (!newVal) this.filter.state = null;
+      if (!newVal) this.state = { name: null };
       else {
         this.getStates();
       }
     },
-    countiesURL(newVAl) {
-      if (!newVal) this.filter.countrycode = null;
+    countiesURL(newVal) {
+      if (!newVal) this.county = { county: null };
       else this.getCounties();
     },
     colDefs(newVal) {
@@ -371,25 +393,27 @@ export default {
     },
     calcTrend(d1, d2, d3, dbase) {
       let trend;
-      // if (d3 <= d2 || d3 <= d1) trend = 1;
+
+      if (!d3 && !d2 && !d1) return "n/a";
       // positive or flat, no evidence of a two week decreasing trend
-      if(false) 1;
       else {
-        let d3Base = dbase - d3;
+        let d3Base = dbase + d3;
         if (d3Base == 0) {
           //whatever;
-          d3Base = 1;
+          return "n/a";
         }
         let dAvg = (d2 + d1) / 2;
-        trend = dAvg / d3Base; // Average of d2 and d1 divided by dbase - d3 (d3_base)
+        let dSum = (d2 + d1);
+        trend = dSum / d3Base; // Sum of d2 and d1 divided by dbase - d3 (d3_base)
       }
-      trend = Math.round(trend * 100)/100;
+      trend = Math.round(trend * 100) / 100;
       trend = trend * 100; //Convert to %
-     return trend;
+      return trend;
     },
     convertToNumbers() {
       //Convert oyRec strings to number vals
       const oyRec = this.oyRec;
+      if (!oyRec) return;
       Object.keys(oyRec).forEach(k => {
         let numVal = oyRec[k] - 0;
         if (numVal != NaN) oyRec[k] = numVal;
@@ -474,7 +498,16 @@ export default {
     getOpenYet() {
       const vm = this;
       util.getData(this.dataURL, vm).then(rso => {
-        vm.oyRec = rso.items[0];
+        // items will be country,[state],[county]
+        if (!rso.items) {
+          console.log(
+            "Error while retrieving OpenYet data: no items returned: " +
+              vm.dataURL
+          );
+          return;
+        }
+        const idx = rso.items.length - 1;
+        vm.oyRec = rso.items[idx];
       });
     },
     showAlert(msg) {
@@ -510,6 +543,10 @@ div#div-controls {
 div.control {
   flex: 0 1 auto;
   padding: 5px;
+}
+label.control-label {
+  font-size: 1.1em;
+  font-weight: bold;
 }
 i.alert-el {
   color: red;
@@ -556,13 +593,13 @@ div#status-report {
   margin: 20px;
   font-weight: bold;
 }
-table.status-detail{
-  border-spacing:10px;
+table.status-detail {
+  border-spacing: 10px;
   border-collapse: separate;
 }
-td.status-detail, th.status-detail {
-  padding:10px;
-
+td.status-detail,
+th.status-detail {
+  padding: 10px;
 }
 /*   STATUS classes */
 .OPEN {
@@ -576,5 +613,9 @@ td.status-detail, th.status-detail {
 .TOPEN {
   background-color: yellow;
   color: black;
+}
+.NA {
+  background-color: grey;
+  color: white;
 }
 </style>

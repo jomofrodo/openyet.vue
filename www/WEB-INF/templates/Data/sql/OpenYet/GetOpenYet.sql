@@ -3,9 +3,7 @@ FROM (
 
 SELECT *, 1 as idx
 FROM cv_national_weekly_delta
-{{#if countrycode}}
 WHERE countrycode = '{{countrycode}}'
-{{/if}}
 
 {{#if statecode}}
 UNION
