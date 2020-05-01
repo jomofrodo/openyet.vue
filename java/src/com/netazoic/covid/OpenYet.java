@@ -53,7 +53,7 @@ import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
 @MultipartConfig
-public class Covid19 extends ServENT {
+public class OpenYet extends ServENT {
 
 	/**
 	 * 
@@ -61,23 +61,31 @@ public class Covid19 extends ServENT {
 	private static final long serialVersionUID = 1L;
 	RouteAction homeHdlr = new HomeHdlr();
 
-	private static final Logger logger = LogManager.getLogger(Covid19.class);
+	private static final Logger logger = LogManager.getLogger(OpenYet.class);
 
 	//creating enum HOME TemPLate?
 	public  enum CVD_TP{
 		Home("/Home/Home.hbs","Main home page"),
+		AdminHome("/Home/AdminHome.hbs","Admin home page"),
 		RetrieveData("/Data/RetrieveData.hbs", "Retrieve Data main page"),
 		READ_ME("README.md","Todos/Redux Read Me"), 
 		sql_GetCombinedData("/Data/sql/Combined/GetCombinedData.sql", "Get combined covid19 data"),
 		sql_UpdateCombinedCountryCodes("/Data/sql/Combined/UpdateCombinedCountryCodes.sql", "Update country codes in combined"),
+		sql_UpdateCombinedStateCodes("/Data/sql/Combined/UpdateCombinedStateCodes.sql", "Update state codes to ANSI for US entries"), 
 		sql_CreateCombinedIncreaseStats("/Data/sql/Combined/CreateIncreaseStats.sql", "Create values for confirmed increase etc"),
 		sql_CreateCountryRollups("/Data/sql/CreateCountryRollups.sql","Create summary entries for countries that are broken out by state"),
 		sql_CreateStateRollups("/Data/sql/CreateStateRollups.sql","Create summary entries for states that are broken out by county"),
+
 		sql_GetCounties("/Data/sql/GetCountyList.sql","Select list of counties for a given state/country"), 
 		sql_GetCountries("/Data/sql/GetCountryList.sql","Select list of countries with countrycodes"), 
-	    sql_GetOpenYetData("/Data/sql/OpenYet/GetOpenYet.sql","Get data for the Open Yet page"),
 		sql_GetStates("/Data/sql/GetStateList.sql","Select list of state names/codes"),
-		sql_UpdateCombinedStateCodes("/Data/sql/Combined/UpdateCombinedStateCodes.sql", "Update state codes to ANSI for US entries"), 
+
+		sql_GetOpenYetData("/Data/sql/OpenYet/GetOpenYet.sql","Get data for the Open Yet page"),
+	    
+	    sql_GetNationalSummary("/Data/sql/OpenYet/GetNationalSummary.sql", "Get open-yet summary data at the national level"),
+	    sql_GetStateSummary("/Data/sql/OpenYet/GetStateSummary.sql", "Get open-yet summary data at the state level"),
+	    sql_GetCountySummary("/Data/sql/OpenYet/GetCountySummary.sql", "Get open-yet summary data a the county level"),
+	    
 		sql_GetRemoteDataStats("/Data/sql/GetRemoteDataStats.sql","Get stats on all remote data tables"),
 		;
 		//Why store template path and description into variables?
@@ -95,11 +103,12 @@ public class Covid19 extends ServENT {
 	}
 
 	public enum CVD_Param{
-		dataSrc, expireAll, expireExisting, country, state, sourceCode, lastUpdate
+		dataSrc, expireAll, expireExisting, country, state, sourceCode, lastUpdate, flgAdmin
 	}
 
 	public enum CVD_Route{
 		home("/home","Show home page"),
+		admin("/cvd/admin","Admin home page"),
 		retrieveData("/cvd/retrieveData", "Retrieve Data"),
 		retrieveALLData("/cvd/retrieveALLData","Retrieve all remote data"),
 		createCombinedData("/cvd/createCombinedData", "Create combined data recs"),
@@ -108,7 +117,11 @@ public class Covid19 extends ServENT {
 		getStateData("/cvd/getData/states","Get state table"),
 		getCountyData("/cvd/getData/counties","Get counties list"),
 		getCombinedData("/cvd/getData/combined", "Get combined covid19 data"),
-		remoteDataStats("/cvd/remoteDataStats", "Get stats about remote data already retrieved")
+		remoteDataStats("/cvd/remoteDataStats", "Get stats about remote data already retrieved"),
+		// current summaries
+		getNationalSummary("/cvd/getData/nationalSummary","Get current summary at the national level"),
+		getStateSummary("/cvd/getData/stateSummary", "Get current summary at the state level for a given country"),
+		getCountySummary("/cvd/getData/countySummary", "Get current summary at the county level for a given country/state")
 		;
 
 		public String route;
@@ -201,7 +214,7 @@ public class Covid19 extends ServENT {
 
 	}
 
-	public Covid19(){
+	public OpenYet(){
 		this.flgDebug = true;
 	}
 
@@ -214,17 +227,15 @@ public class Covid19 extends ServENT {
 		GetDataHdlr getData = new GetDataHdlr();
 		defaultRoute = CVD_Route.home.route;
 		routeMap.put(CVD_Route.home.route, homeHdlr);
-		routeMap.put(CVD_Route.retrieveData.route, new RemoteDataHdlr());
-		routeMap.put(CVD_Route.retrieveALLData.route, new RetrieveAllDataHdlr());
 		routeMap.put(CVD_Route.getCountryData.route, getData);
 		routeMap.put(CVD_Route.getCountyData.route, getData);
 		routeMap.put(CVD_Route.getStateData.route, getData);
 		routeMap.put(CVD_Route.getCombinedData.route, getData);
 		routeMap.put(CVD_Route.getOpenYet.route, getData);
+		routeMap.put(CVD_Route.getNationalSummary.route, getData);
+		routeMap.put(CVD_Route.getStateSummary.route, getData);
+		routeMap.put(CVD_Route.getCountySummary.route, getData);
 		routeMap.put(CVD_Route.remoteDataStats.route, new RemoteDataStats());
-		routeMap.put(CVD_Route.createCombinedData.route, new CreateCombinedDataHdlr());
-
-
 	}
 
 	public RemoteDataObj getRDO(rdENT ds, Connection con) throws Exception {
@@ -356,26 +367,7 @@ public class Covid19 extends ServENT {
 		return ctrObj;
 	}
 
-	private Integer updateCombinedData(RemoteDataObj rdo, Connection con) throws Exception {
-		String tp = CVD_TP.sql_UpdateCombinedCountryCodes.tPath;
-		String q = parseQuery(tp);
-		SQLUtil.execSQL(q, con);
 
-		int ctCreated = rdo.createCombinedData();
-		logger.debug("Created " + ctCreated + " combined records");
-
-		// redo the combined countrycodes
-		tp = CVD_TP.sql_UpdateCombinedCountryCodes.tPath;
-		q = parseQuery(tp);
-		SQLUtil.execSQL(q, con);
-
-		//Update State Codes (US only)
-		tp = CVD_TP.sql_UpdateCombinedStateCodes.tPath;
-		q = parseQuery(tp);
-		SQLUtil.execSQL(q, con);
-
-		return ctCreated;
-	}
 
 	private void shutDown(){
 		/*
@@ -432,12 +424,25 @@ public class Covid19 extends ServENT {
 				case getOpenYet:
 					rso = getOpenYetData(requestMap,con);
 					break;
-					
+				case getNationalSummary:
+					tp = CVD_TP.sql_GetNationalSummary.tPath;
+					q = parseQuery(tp,requestMap);
+					rso = RSObj.getRSObj(q, "countrycode", con);
+					break;
+				case getStateSummary:
+					tp = CVD_TP.sql_GetStateSummary.tPath;
+					q = parseQuery(tp,requestMap);
+					rso = RSObj.getRSObj(q, "statecode", con);
+					break;
+				case getCountySummary:
+					tp = CVD_TP.sql_GetCountySummary.tPath;
+					q = parseQuery(tp,requestMap);
+					rso = RSObj.getRSObj(q, "county", con);
+					break;
 				default:
-					throw new Exception("Could not determine the requested data");
+					throw new Exception("Invalid data query");
 				}
 
-				//				json = JSONUtil.toJSON(rso.items);
 				json = JSONUtil.toJSON(rso);
 				ajaxResponse(json,response);
 			}catch(Exception ex) {
@@ -454,6 +459,8 @@ public class Covid19 extends ServENT {
 			return rso;
 		}
 	}
+	
+
 
 
 	public class HomeHdlr extends RouteEO{
@@ -464,6 +471,7 @@ public class Covid19 extends ServENT {
 						throws IOException, Exception {
 			String tPath = CVD_TP.Home.tPath;
 			Map<String,Object> map = new HashMap<String,Object>();
+
 			parseOutput(map, tPath, response);
 		}	
 	}
@@ -488,179 +496,8 @@ public class Covid19 extends ServENT {
 		}
 
 	}
-	public class RemoteDataHdlr extends RouteEO{
-		// Retrieve data from external sources
-		@Override
-		public void routeAction(HttpServletRequest request,
-				HttpServletResponse response, Connection con, HttpSession session)
-						throws IOException, Exception {
-			boolean flgDebug = true;
-			HashMap<String,Object> map = new HashMap();
-			String dataSrc = (String) request.getAttribute(CVD_Param.dataSrc.name());
-			String[] dataSrcA;
-			String country = (String) request.getAttribute(CVD_Param.country.name());
-			String state = (String) request.getAttribute(CVD_Param.state.name());
-			Boolean flgExpireExisting = false;
-			HashMap<String,Object>retMap = new HashMap<String,Object>();
-			RemoteDataRecordCtr ctMap = null;
-			String expireExisting = (String) request.getAttribute(CVD_Param.expireExisting.name());
-			flgExpireExisting = Boolean.parseBoolean(expireExisting);
-			if(dataSrc==null) return;
-			dataSrcA = dataSrc.split(":");
+	
 
-			for(String dsrc : dataSrcA) {
-				CVD_DataSrc src = CVD_DataSrc.getSrc(dsrc);
-				rdENT rdEnt = src.getEnt();
-				rdEnt.init(con);
-				switch(src.rdEnt.srcOrg) {
-				case JH_G:
-				case JH_US:
-					rdEnt.setSrc(src);
-					rdEnt.setType(src.type);
-					break;
-				case CTP:
-					rdEnt = new CTP_Daily();
-					rdEnt.setSrc(src);
-					break;
-
-				}
-				RemoteDataObj rdo = getRDO(rdEnt, con);
-				if(flgExpireExisting) {
-					int ctExpired = rdo.expireAllRemoteDataRecords(null);
-					logger.info("Expired " + ctExpired + " existing combined records");
-					//					flgExpireExisting = false;
-				}
-
-
-				con.setAutoCommit(false);
-				logger.info("Starting retrieval of remote data");
-				ctMap = retrieveRemoteData(country,state,rdEnt, rdo, con);
-				logger.info("Created " + ctMap.ctNewRecordsCreated + " new records for " + src.srcCode );
-				retMap.put("cts_" + src.srcCode, ctMap);
-				retMap.put("src_" + src.srcCode, src.name());
-				retMap.put("srccode_" + src.srcCode, src.srcCode);
-			}
-
-
-			con.setAutoCommit(true);
-			logger.info("Finished with remote data retrieval");
-			String json = JSONUtil.toJSON(retMap);
-			ajaxResponse(json, response);
-
-		}
-
-	}
-
-	public class RetrieveAllDataHdlr extends RouteEO{
-
-		@Override
-		public void routeAction(HttpServletRequest request,
-				HttpServletResponse response, Connection con, HttpSession session)
-						throws IOException, Exception {
-			HashMap<String,Object> map = new HashMap<String,Object>();
-			logger.info("Starting retrieval of all data.");
-			String country = (String) request.getAttribute(CVD_Param.country.name());
-			String state = (String) request.getAttribute(CVD_Param.state.name());
-
-			try {
-				for(CVD_DataSrc src : CVD_DataSrc.values()) {
-					RemoteDataObj rdo = getRDO(src.rdEnt,con);
-					//					rdo.rdEnt.expireCombinedRecs();
-					//					rdo.expireAllRemoteDataRecords(map);
-					logger.info("Expired remote records");
-					RemoteDataRecordCtr retMap = retrieveRemoteData(country,state,src.rdEnt, rdo, con);
-					logger.info("Finished with import for: " + src.desc);
-				}
-
-				map.put("all", "done");
-				String json = JSONUtil.toJSON(map);
-				ajaxResponse(json, response);
-			}catch(Exception ex) {
-				String msg = ex.toString();
-				msg += ":" + ex.getMessage();
-				ajaxError(msg, ex, response);
-				logger.error(msg);
-			}
-		}	
-	}
-
-	public class CreateCombinedDataHdlr extends RouteEO{
-
-		@Override
-		public void routeAction(HttpServletRequest request,
-				HttpServletResponse response, Connection con, HttpSession session)
-						throws IOException, Exception {
-			HashMap<String,Object> map = new HashMap<String,Object>();
-			logger.info("Generating combined data.");
-			Boolean flgExpireRecs = false;
-			String expireAll = (String) request.getAttribute(CVD_Param.expireAll.name());
-			flgExpireRecs = Boolean.parseBoolean(expireAll);
-
-			int ctCreated = 0, ctTotalCreated = 0;
-			HashMap<String,String> mapSrcs = new HashMap<String,String>();
-			String srcCode;
-			String dataSrc = (String) request.getAttribute(CVD_Param.dataSrc.name());
-			String[] dataSrcs = dataSrc.split(":");
-			// Representative data sources
-			//			CVD_DataSrc[] dataSrcs = { CVD_DataSrc.JH_GLBL_CONF, CVD_DataSrc.JH_US_CONF};
-			//			CVD_DataSrc[] dataSrcs = { CVD_DataSrc.JH_GLBL_CONF};
-			try {
-				for(String dsrc : dataSrcs) {
-					CVD_DataSrc src = CVD_DataSrc.getSrc(dsrc);
-					rdENT rdEnt = src.getEnt();
-					srcCode = mapSrcs.get(src.srcCode);
-					if(srcCode==null) mapSrcs.put(src.srcCode, src.srcCode);
-					RemoteDataObj rdo = getRDO(src.rdEnt,con);
-					if(flgExpireRecs) {
-						int ctExpired = src.rdEnt.expireCombinedRecs();
-						logger.info("Expired " + ctExpired + " existing combined records");
-						//						flgExpireRecords = false;
-					}
-					logger.info("Create combined data for : " + src.srcCode);
-					ctCreated = updateCombinedData(rdo, con);
-					ctTotalCreated += ctCreated;
-					logger.info("Finished with combined data for: " + src.desc);
-					logger.info("Created " + ctCreated + " combined records");
-
-				}
-
-				logger.info("Creating increase stats");
-				createIncreaseStats(con);
-
-				ctCreated = getCombinedRecordCount(con);
-				logger.info("Created " + ctTotalCreated + " total new combined records");
-				map.put("all", "done");
-				String json = JSONUtil.toJSON(map);
-				ajaxResponse(json, response);
-			}catch(Exception ex) {
-				String msg = ex.toString();
-				msg += ":" + ex.getMessage();
-				ajaxError(msg, ex, response);
-				logger.error(msg);
-			}
-		}
-
-		private Integer createIncreaseStats(Connection con) throws Exception {
-			String tp = CVD_TP.sql_CreateCombinedIncreaseStats.tPath;
-			String q = parseQuery(tp);
-			Integer ct = SQLUtil.execSQL(q, con);
-			return ct;
-		}
-
-		private int getCombinedRecordCount(Connection con) throws SQLException {
-			String q = "SELECT COUNT(date) as ct FROM covid.combined";
-			String ctStr = SQLUtil.execSQL(q, "ct", con);
-			Integer ct = Integer.valueOf(ctStr);
-			return ct;
-		}
-
-		private int expireCombinedRecords(Connection con) throws SQLException {
-			String q = "DELETE FROM covid.combined";
-			int ct = SQLUtil.execSQL(q, con);
-			return ct;
-
-		}	
-	}
 
 
 }

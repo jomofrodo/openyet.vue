@@ -21,7 +21,7 @@ export default {
     return {
       urlCombined: "cvd/getData/combined",
       urlCountries: "cvd/getData/countries",
-      urlCountriesCSV: "app/covid/data/countries.csv",
+      urlCountriesCSV: "/app/covid/data/countries.csv",
       csvData: [],
       cols: ["date", "positive", "death", "recovered"],
       sortOrders: {},

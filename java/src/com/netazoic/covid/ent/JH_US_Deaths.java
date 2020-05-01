@@ -10,7 +10,7 @@ import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
 
-import com.netazoic.covid.Covid19.CVD_DataSrc;
+import com.netazoic.covid.OpenYet.CVD_DataSrc;
 import com.netazoic.covid.ent.JH_TimeSeries.JH_TP;
 import com.netazoic.ent.ENTException;
 import com.netazoic.util.SQLUtil;

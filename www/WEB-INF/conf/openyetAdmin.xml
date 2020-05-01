@@ -1,0 +1,14 @@
+	<servlet>
+		<servlet-name>OpenYetAdmin</servlet-name>
+		<servlet-class>com.netazoic.covid.OpenYetAdmin</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	
+	<servlet-mapping>
+		<servlet-name>OpenYetAdmin</servlet-name>
+		<url-pattern>/cvd/admin</url-pattern>
+		<url-pattern>/cvd/admin/*</url-pattern>
+		<url-pattern>/admin</url-pattern>
+		<url-pattern>/admin/*</url-pattern>
+	</servlet-mapping>
+

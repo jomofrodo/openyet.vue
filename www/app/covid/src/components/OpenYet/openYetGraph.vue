@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h3>HELLO WORLD</h3>
+    <h4>Coming Soon</h4>
     <ve-line :data="chartData"></ve-line>
   </div>
 </template>

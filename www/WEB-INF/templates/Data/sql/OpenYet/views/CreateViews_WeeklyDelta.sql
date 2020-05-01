@@ -9,6 +9,7 @@ CREATE VIEW cv_national_weekly_delta AS
 
 SELECT w3.countrycode, w3.statecode, w3.county, 
 w4.confirmed as conf_base, w4.death as death_base, w4.perc_positive as perc_positive_base,
+w1.confirmed as conf_now, w1.death as death_now, w1.perc_positive as perc_positive_now,
 thisweek as week0, w1.week as week1, w2.week as week2, w3.week as week3,
 CASE
 	WHEN w0.datect=7 THEN w0.confirmedincrease - w1.confirmedincrease
@@ -17,6 +18,9 @@ END as confd0,
 w1.confirmedincrease - w2.confirmedincrease as confd1,
 w2.confirmedincrease - w3.confirmedincrease as confd2,
 w3.confirmedincrease - w4.confirmedincrease as confd3,
+w1.confirmedincrease/w1.confirmed - w2.confirmedincrease/w2.confirmed as confd1p,
+w2.confirmedincrease/w2.confirmed - w3.confirmedincrease/w3.confirmed as confd2p,
+w3.confirmedincrease/w3.confirmed - w4.confirmedincrease/w4.confirmed as confd3p,
 CASE
 	WHEN w0.datect=7 THEN w0.deathincrease - w1.deathincrease
 	ELSE ROUND(((w0.deathincrease/w0.datect)*7),0) - w1.deathincrease
@@ -24,6 +28,9 @@ END as deathd0,
 w1.deathincrease - w2.deathincrease as deathd1,
 w2.deathincrease - w3.deathincrease as deathd2,
 w3.deathincrease - w4.deathincrease as deathd3,
+w1.deathincrease/w1.death - w2.deathincrease/w2.death as deathd1p,
+w2.deathincrease/w2.death - w3.deathincrease/w3.death as deathd2p,
+w3.deathincrease/w3.death - w4.deathincrease/w4.death as deathd3p,
 CASE
 	WHEN w0.datect=7 THEN w0.perc_positive - w1.perc_positive
 	ELSE round(((w0.perc_positive/w0.datect)*7),0) - w1.perc_positive
@@ -57,6 +64,7 @@ CREATE VIEW cv_state_weekly_delta AS
 
 SELECT w3.countrycode, w3.statecode, w3.county,
 w4.confirmed as conf_base, w4.death as death_base, w4.perc_positive as perc_positive_base,
+w1.confirmed as conf_now, w1.death as death_now, w1.perc_positive as perc_positive_now,
 thisweek as week0, w1.week as week1, w2.week as week2, w3.week as week3,
 CASE
 	WHEN w0.datect=7 THEN w0.confirmedincrease - w1.confirmedincrease
@@ -65,6 +73,9 @@ END as confd0,
 w1.confirmedincrease - w2.confirmedincrease as confd1,
 w2.confirmedincrease - w3.confirmedincrease as confd2,
 w3.confirmedincrease - w4.confirmedincrease as confd3,
+w1.confirmedincrease/w1.confirmed - w2.confirmedincrease/w2.confirmed as confd1p,
+w2.confirmedincrease/w2.confirmed - w3.confirmedincrease/w3.confirmed as confd2p,
+w3.confirmedincrease/w3.confirmed - w4.confirmedincrease/w4.confirmed as confd3p,
 CASE
 	WHEN w0.datect=7 THEN w0.deathincrease - w1.deathincrease
 	ELSE ROUND(((w0.deathincrease/w0.datect)*7),0) - w1.deathincrease
@@ -72,6 +83,9 @@ END as deathd0,
 w1.deathincrease - w2.deathincrease as deathd1,
 w2.deathincrease - w3.deathincrease as deathd2,
 w3.deathincrease - w4.deathincrease as deathd3,
+w1.deathincrease/w1.death - w2.deathincrease/w2.death as deathd1p,
+w2.deathincrease/w2.death - w3.deathincrease/w3.death as deathd2p,
+w3.deathincrease/w3.death - w4.deathincrease/w4.death as deathd3p,
 CASE
 	WHEN w0.datect=7 THEN w0.perc_positive - w1.perc_positive
 	ELSE round(((w0.perc_positive/w0.datect)*7),0) - w1.perc_positive
@@ -106,6 +120,7 @@ CREATE VIEW cv_county_weekly_delta AS
 
 SELECT w3.countrycode, w3.statecode, w3.county, 
 w4.confirmed as conf_base, w4.death as death_base, w4.perc_positive as perc_positive_base,
+w1.confirmed as conf_now, w1.death as death_now, w1.perc_positive as perc_positive_now,
 thisweek as week0, w1.week as week1, w2.week as week2, w3.week as week3,
 CASE
 	WHEN w0.datect=7 THEN w0.confirmedincrease - w1.confirmedincrease
@@ -114,6 +129,9 @@ END as confd0,
 w1.confirmedincrease - w2.confirmedincrease as confd1,
 w2.confirmedincrease - w3.confirmedincrease as confd2,
 w3.confirmedincrease - w4.confirmedincrease as confd3,
+w1.confirmedincrease/w1.confirmed - w2.confirmedincrease/w2.confirmed as confd1p,
+w2.confirmedincrease/w2.confirmed - w3.confirmedincrease/w3.confirmed as confd2p,
+w3.confirmedincrease/w3.confirmed - w4.confirmedincrease/w4.confirmed as confd3p,
 CASE
 	WHEN w0.datect=7 THEN w0.deathincrease - w1.deathincrease
 	ELSE ROUND(((w0.deathincrease/w0.datect)*7),0) - w1.deathincrease
@@ -121,6 +139,9 @@ END as deathd0,
 w1.deathincrease - w2.deathincrease as deathd1,
 w2.deathincrease - w3.deathincrease as deathd2,
 w3.deathincrease - w4.deathincrease as deathd3,
+w1.deathincrease/w1.death - w2.deathincrease/w2.death as deathd1p,
+w2.deathincrease/w2.death - w3.deathincrease/w3.death as deathd2p,
+w3.deathincrease/w3.death - w4.deathincrease/w4.death as deathd3p,
 CASE
 	WHEN w0.datect=7 THEN w0.perc_positive - w1.perc_positive
 	ELSE round(((w0.perc_positive/w0.datect)*7),0) - w1.perc_positive

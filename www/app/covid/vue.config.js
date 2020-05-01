@@ -7,7 +7,8 @@ module.exports = {
             ? '/app/covid/dist/prd'
             : '/app/covid/dist/dev',
     pages: {
-        covid: 'src/main.js'
+        openyet: 'src/main.js',
+        oy_admin: 'src/admin.js'
     },
     configureWebpack: {
         resolve: {
@@ -31,8 +32,5 @@ module.exports = {
     },
     configureWebpack: {
         devtool: 'source-map'
-    },
-    transpileDependencies: [
-	    "vuetify"	
-    ]
+    }
 };

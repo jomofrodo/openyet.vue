@@ -1,6 +1,6 @@
 package com.netazoic.covid.ent;
 
-import com.netazoic.covid.Covid19.CVD_DataSrc;
+import com.netazoic.covid.OpenYet.CVD_DataSrc;
 import com.netazoic.covid.ent.JH_TimeSeries.JH_TimeSeriesType;
 import com.netazoic.ent.ENTException;
 import com.netazoic.ent.rdENT.SRC_ORG;

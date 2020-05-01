@@ -12,7 +12,7 @@ import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
 
-import com.netazoic.covid.Covid19.CVD_DataSrc;
+import com.netazoic.covid.OpenYet.CVD_DataSrc;
 import com.netazoic.ent.ENTException;
 import com.netazoic.ent.ifDataSrc;
 import com.netazoic.ent.if_TP;

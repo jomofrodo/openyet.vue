@@ -1,6 +1,7 @@
 import Vue from "vue";
-import App_BS4 from "./App_BS4.vue";
-import router from "./router";
+
+import Admin from "./Admin.vue";
+import router from "./router/admin";
 import store from "./store";
 import axios from 'axios';
 // import './css/rwa.css';
@@ -32,5 +33,5 @@ Vue.use(IconsPlugin);
 new Vue({
   router,
   store,
-  render: h => h(App_BS4)
+  render: h => h(Admin)
 }).$mount("#app");

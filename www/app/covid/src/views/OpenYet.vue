@@ -60,44 +60,17 @@
     </div>
     <div id="open-yet-main" v-if="oyStatus.overallStatus">
       <div id="main-status" class="flex-main">
-        <div>
-          <label>Status:</label>
-          <div
-            id="status-report"
-            class="status"
-            :class="oyStatus.overallStatus.code"
-          >{{oyStatus.overallStatus.name}}</div>
-        </div>
+        <div
+          id="status-report"
+          class="status"
+          :class="oyStatus.overallStatus.code"
+        >{{oyStatus.overallStatus.name}}</div>
       </div>
       <div id="open-yet-breakdown" class="flex-main">
         <h4>2 Week Trend</h4>
         <b-tabs content-class="mt-3">
           <b-tab title="summary" active>
-            <div>
-              <table class="status-detail">
-                <tr>
-                  <th class="status-detail">Confirmed</th>
-                  <td
-                    class="status-detail"
-                    :class="oyStatus.confStatus.code"
-                  >{{oyStatus.confTrend}}%</td>
-                </tr>
-                <tr>
-                  <th class="status-detail">% Positive</th>
-                  <td class="status-detail" :class="oyStatus.ppositiveStatus.code">
-                    {{oyStatus.ppositiveTrend}}
-                    <span v-if="oyStatus.ppositiveTrend != 'n/a'">%</span>
-                  </td>
-                </tr>
-                <tr>
-                  <th class="status-detail">Deaths</th>
-                  <td
-                    class="status-detail"
-                    :class="oyStatus.deathsStatus.code"
-                  >{{oyStatus.deathsTrend}}%</td>
-                </tr>
-              </table>
-            </div>
+            <open-yet-summary :oyRec="oyRec" :oyStatus="oyStatus" />
           </b-tab>
           <b-tab title="detail">
             <open-yet-detail :oyRec="oyRec" />
@@ -109,15 +82,17 @@
       </div>
     </div>
 
-    <njs-grid
-      :gridCode="gridCode"
-      :gridID="gridCode"
-      :colDefs="colDefs"
-      :dataURL="dataURL"
-      :pDefaultRec="defaultRec"
-      :p-filter="searchQuery"
-      :readOnly="flgReadOnly"
-    />
+    <div id="summary-grid">
+      <njs-grid
+        :gridCode="gridCode"
+        :gridID="gridCode"
+        :colDefs="colDefs"
+        :dataURL="urlSummaryData"
+        :pDefaultRec="defaultRec"
+        :p-filter="searchQuery"
+        :readOnly="flgReadOnly"
+      />
+    </div>
 
     <!-- Alert Dialog -->
     <jo-modal
@@ -137,8 +112,9 @@ import Vue from "vue";
 import njsGrid from "../njsGrid/src/njsGrid.vue"; // local src
 import joModal from "../components/joModal.vue";
 import ColumnSelector from "../components/ColumnSelector.vue";
-import openYetDetail from "../components/openYetDetail.vue";
-import openYetGraph from "../components/openYetGraph.vue";
+import openYetDetail from "../components/OpenYet/openYetDetail.vue";
+import openYetGraph from "../components/OpenYet/openYetGraph.vue";
+import openYetSummary from "../components/OpenYet/openYetSummary.vue";
 import vueSelect from "vue-select";
 import * as commonOptions from "../grid/common-options";
 import * as util from "../lib/util.js";
@@ -167,6 +143,7 @@ export default {
     njsGrid,
     openYetDetail,
     openYetGraph,
+    openYetSummary,
     vueSelect
   },
   props: [],
@@ -174,7 +151,7 @@ export default {
     return {
       country: USA,
       state: { name: "-- select a state --" },
-      county: { county: null },
+      county: { county: "-- select a county --" },
       searchQuery: "",
       colDefs: [],
       countries: [],
@@ -184,8 +161,7 @@ export default {
       flgReadOnly: true,
       gridDefaults: [],
       gridOptions: [],
-      gridCode: "OPEN_YET",
-      flgDebug: true,
+      flgDebug: false,
       flgDirty: false,
       dlgs: {
         dlgAlert: { id: "dlgAlert", flg: false }
@@ -194,7 +170,12 @@ export default {
       urlCountries: "cvd/getData/countries",
       urlStates: "cvd/getData/states",
       urlCounties: "cvd/getData/counties",
-      urlData: "cvd/getData/getOpenYet?limit=1000",
+      // Grid Data
+      urlOpenYetData: "cvd/getData/getOpenYet?limit=1000",
+      urlSummaryNational: "/cvd/getData/nationalSummary",
+      urlSummaryState: "/cvd/getData/stateSummary",
+      urlSummaryCounty: "/cvd/getData/countySummary",
+      // Misc
       reloadIdx: 1,
       alertMsg: "",
       infoMsg: "msg"
@@ -210,7 +191,7 @@ export default {
   },
   computed: {
     dataURL() {
-      let url = this.urlData;
+      let url = this.urlOpenYetData;
       // Add filters
       if (this.country && this.country.countrycode) {
         url += "&countrycode=" + this.country.countrycode;
@@ -250,11 +231,18 @@ export default {
 
       return rec;
     },
+    flgCounty() {
+      return this.county && this.county.statecode != null;
+    },
     flgCounties() {
       const colCounty = this.colDefs.find(function(col) {
         return col.colName == "county";
       });
       return this.counties && this.counties.length > 0;
+    },
+    flgState() {
+      //Do we have a state selected?
+      return this.state && this.state.statecode != null;
     },
     flgStates() {
       const colState = this.colDefs.find(function(col) {
@@ -262,61 +250,52 @@ export default {
       });
       return this.states.length > 0;
     },
+    gridCode() {
+      let code;
+      // default is national summary
+      if (this.flgCounty) code = "SUMMARY_COUNTY";
+      else if (this.flgState) code = "SUMMARY_STATE";
+      else code = "SUMMARY_NATIONAL";
+      return code;
+    },
     oyStatus() {
       // compute status based on data in the oyRec
       let oyRec = this.oyRec;
       if (!oyRec || Object.keys(oyRec).length == 0) return {};
       let oyStat = {};
-      oyStat.confTrend = this.calcTrend(
-        oyRec.confd1,
-        oyRec.confd2,
-        oyRec.confd3,
-        oyRec.conf_base
-      );
-      oyStat.ppositiveTrend = this.calcTrend(
-        oyRec.perc_positived1,
-        oyRec.perc_positived2,
-        oyRec.perc_positived3,
-        oyRec.perc_positive_base
-      );
-      oyStat.deathsTrend = this.calcTrend(
-        oyRec.deathd1,
-        oyRec.deathd2,
-        oyRec.deathd3,
-        oyRec.death_base
-      );
-
-      oyStat.confStatus =
-        oyStat.confTrend < 0
-          ? STATUS.OPEN
-          : oyStat.confd2 == "n/a"
-          ? STATUS.NA
-          : STATUS.CLOSED;
-      oyStat.ppositiveStatus =
-        oyStat.ppositiveTrend < 0
-          ? STATUS.OPEN
-          : oyStat.ppositiveTrend == "n/a"
-          ? STATUS.NA
-          : STATUS.CLOSED;
-      oyStat.deathsStatus =
-        oyStat.deathsTrend < 0
-          ? STATUS.OPEN
-          : oyStat.deathsTrend == "n/a"
-          ? STATUS.NA
-          : STATUS.CLOSED;
       let status;
-      if (oyStat.confTrend < 0) status = STATUS.OPEN;
-      else if (oyStat.ppositiveTrend < 0) status = STATUS.OPEN;
-      else if (oyStat.deathsTrend < 0) status = STATUS.OPEN;
+      //Need at least two of three trends to be less than zero for status open
+      // Or one positive and two zeroes
+
+      const confTrend = oyRec.confTrend;
+      const posTrend = oyRec.ppositiveTrend;
+      const deathsTrend = oyRec.deathsTrend;
+      if(confTrend < 0 && (posTrend <= 0 || deathsTrend <= 0)) status = STATUS.OPEN;
+      else if(posTrend < 0 && (deathsTrend <= 0 || confTrend <=0)) status = STATUS.OPEN;
+      else if (deathsTrend < 0 && (confTrend <=0 || posTrend <= 0)) status = STATUS.OPEN;
+      else if(posTrend ==0 && confTrend == 0 && deathsTrend == 0) status = STATUS.STATIC;
       else status = STATUS.CLOSED;
 
       oyStat.overallStatus = status;
       return oyStat;
+    },
+    urlSummaryData() {
+      let url;
+      // default is national summary
+      if (this.flgCounty) url = this.urlSummaryCounty + "?countrycode=" + this.country.countrycode 
+        + "&statecode=" + this.state.statecode;
+      else if (this.flgState) url = this.urlSummaryState + "?countrycode=" +this.country.countrycode;
+      else url = this.urlSummaryNational + "?countrycode=" + this.country.countrycode;
+      return url;
     }
   },
   watch: {
+    country(newVal){
+      this.state = {name:null};
+      this.county = {county:null};
+    },
     state(newVal) {
-      this.county = {};
+      this.county = {county:null};
     },
     statesURL(newVal) {
       if (!newVal) this.state = { name: null };
@@ -341,8 +320,8 @@ export default {
               if (strDefault) col.default = strDefault;
             }
           } catch (err) {
-            console.log(col.default);
-            console.log(err);
+            if(vm.flgDebug) console.log(col.default);
+            if(vm.flgDebug) console.log(err);
           }
         }
         if (col.options) {
@@ -359,8 +338,26 @@ export default {
         this.getOpenYet(newVal);
       }
     },
+    gridCode(newVal){
+      this.initGrid();
+    },
     oyRec(newVal) {
+      const vm = this;
       this.convertToNumbers(newVal); // Convert strings to numbers
+      let oyRec = newVal;
+      oyRec.confTrend = this.calcTrend(
+        oyRec.confd1p,
+        oyRec.confd2p
+      );
+      oyRec.ppositiveTrend = this.calcTrend(
+        oyRec.perc_positived1,
+        oyRec.perc_positived2
+      );
+      oyRec.deathsTrend = this.calcTrend(
+        oyRec.deathd1p,
+        oyRec.deathd2p
+      );
+      if(vm.flgDebug) console.log(oyRec);
     }
   },
 
@@ -391,23 +388,13 @@ export default {
       const vm = this;
       //NOT IN USE
     },
-    calcTrend(d1, d2, d3, dbase) {
-      let trend;
-
-      if (!d3 && !d2 && !d1) return "n/a";
-      // positive or flat, no evidence of a two week decreasing trend
-      else {
-        let d3Base = dbase + d3;
-        if (d3Base == 0) {
-          //whatever;
-          return "n/a";
-        }
-        let dAvg = (d2 + d1) / 2;
-        let dSum = (d2 + d1);
-        trend = dSum / d3Base; // Sum of d2 and d1 divided by dbase - d3 (d3_base)
+    calcTrend(d1,d2){
+      let trend =  d1 + d2;
+      if(trend.indexOf(".")){
+      // if(trend != 0 && (trend < 1 && trend > -1)){
+        //decimal
+        trend = Math.round(trend*100,0);
       }
-      trend = Math.round(trend * 100) / 100;
-      trend = trend * 100; //Convert to %
       return trend;
     },
     convertToNumbers() {
@@ -439,16 +426,15 @@ export default {
     },
     getCountries() {
       const vm = this;
-      const jsonStr = window.localStorage.getItem("countries.json");
-      //DEBUG
-      if (false) vm.countries = JSON.parse(jsonStr);
+      const countries = this.getLocalStorage("countries.json");
+      if (countries) vm.countries = countries;
       else {
         util
           .getData(vm.urlCountries, vm)
           .then(rso => {
             // Write data to local storage'
             const recs = rso.items;
-            window.localStorage.setItem("countries.json", JSON.stringify(recs));
+            this.writeLocalStorage("countries.json", recs);
             vm.countries = recs;
           })
           .catch(err => alert(err));
@@ -457,20 +443,22 @@ export default {
     getCounties() {
       const vm = this;
       if (!this.statesURL) return null;
-      const jsonStr = window.localStorage.getItem(
-        this.state.statecode + "-counties.json"
+      let counties = this.getLocalStorage(
+        this.country.countrycode + "-" + this.state.statecode + "-counties.json"
       );
-      //DEBUG
-      if (false) vm.counties = JSON.parse(jsonStr);
+      if (counties) vm.counties = counties;
       else {
         util
           .getData(this.countiesURL, vm)
           .then(rso => {
             // Write data to local storage'
             const recs = rso.items;
-            window.localStorage.setItem(
-              vm.state.statecode + "-counties.json",
-              JSON.stringify(recs)
+            vm.writeLocalStorage(
+              this.country.countrycode +
+                "-" +
+                vm.state.statecode +
+                "-counties.json",
+              recs
             );
             vm.counties = recs;
           })
@@ -480,16 +468,17 @@ export default {
     getStates() {
       const vm = this;
       if (!this.statesURL) return null;
-      const jsonStr = window.localStorage.getItem("states.json");
-      //DEBUG
-      if (false) vm.states = JSON.parse(jsonStr);
+      const states = this.getLocalStorage(
+        this.country.countrycode + "-states.json"
+      );
+      if (states) vm.states = states;
       else {
         util
           .getData(this.statesURL, vm)
           .then(rso => {
             // Write data to local storage'
             const recs = rso.items;
-            window.localStorage.setItem("states.json", JSON.stringify(recs));
+            vm.writeLocalStorage(vm.country.countrycode + "-states.json", recs);
             vm.states = recs;
           })
           .catch(err => alert(err));
@@ -500,7 +489,7 @@ export default {
       util.getData(this.dataURL, vm).then(rso => {
         // items will be country,[state],[county]
         if (!rso.items) {
-          console.log(
+          if(vm.flgDebug) console.log(
             "Error while retrieving OpenYet data: no items returned: " +
               vm.dataURL
           );
@@ -511,7 +500,7 @@ export default {
       });
     },
     showAlert(msg) {
-      console.log(msg);
+      if(this.flgDebug) console.log(msg);
       msg = msg.replace(/\n/g, "<br />");
       msg = msg.replace(/\\r\\n/g, "<br />");
       msg = msg.replace(/\\n/g, "<br />");
@@ -522,6 +511,21 @@ export default {
     toggleDialog(dlg) {
       dlg.flg = !dlg.flg;
       //    this.dlgs[dlgID] = !this.dlgs[dlgID];
+    },
+    clearLocalStorage() {
+      window.localStorage.setItem("openYet", "{}");
+    },
+    writeLocalStorage(key, val) {
+      let oyStorageRec = this.getLocalStorage();
+      oyStorageRec[key] = val;
+      window.localStorage.setItem("openYet", JSON.stringify(oyStorageRec));
+    },
+    getLocalStorage(key) {
+      const oyStorageJSON = window.localStorage.getItem("openYet");
+      if (oyStorageJSON == null) return {};
+      const oyStorageRec = JSON.parse(oyStorageJSON);
+      if (key) return oyStorageRec[key];
+      else return oyStorageRec;
     }
   }
 };
@@ -537,8 +541,19 @@ export default {
   margin-top: 10px;
   margin-left: 30px;
 }
+div#open-yet-main{
+  min-height: 50vh;
+}
+div#summary-grid{
+  min-height: 20vh;
+  max-height: 80vh;
+}
 div#div-controls {
   display: flex;
+}
+table#njs-grid{
+  max-height: 40vh;
+  overflow:auto;
 }
 div.control {
   flex: 0 1 auto;

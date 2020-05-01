@@ -44,7 +44,7 @@ export default {
     flex: 1;
 }/* scroll the content area as needed */
 .main {
-    /* overflow-y: auto; */
+    overflow-y: auto;
     min-height: 40rem;
 }
 .navbarx {

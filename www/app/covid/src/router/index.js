@@ -4,11 +4,15 @@ import Router from "vue-router";
 Vue.use(Router);
 
 export default new Router({
-  mode: 'history',
+  // mode: 'history',
   routes: [
     {
       path: "/",
       name: "home",
+      component: () => import("@/views/OpenYet")
+    },
+    { path: "/home",
+      name: "home-alias",
       component: () => import("@/views/OpenYet")
     },
     {
@@ -27,7 +31,7 @@ export default new Router({
       component: () => import("@/views/CombinedGrid")
     },
     {
-      path: "/data/update",
+      path: "/admin/data/update",
       name: "data-update",
       component: () => import("@/views/DataUpdate")
     }

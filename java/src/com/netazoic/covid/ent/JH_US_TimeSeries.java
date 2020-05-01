@@ -15,7 +15,7 @@ import org.apache.logging.log4j.Logger;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
-import com.netazoic.covid.Covid19.CVD_DataSrc;
+import com.netazoic.covid.OpenYet.CVD_DataSrc;
 import com.netazoic.ent.ENTException;
 import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
