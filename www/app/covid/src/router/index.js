@@ -21,19 +21,14 @@ export default new Router({
       component: () => import("@/views/Static")
     },
     {
-      path: "/nations",
-      name: "nations",
-      component: () => import("@/views/Nations")
-    },
-    {
       path: "/grid/combined",
       name: "combined-grid",
       component: () => import("@/views/CombinedGrid")
     },
-    {
-      path: "/admin/data/update",
-      name: "data-update",
-      component: () => import("@/views/DataUpdate")
+    { 
+      path: "/docs/methodology",
+      name: "docs-methodology",
+      component: () => import("@/views/docs/Methodology")
     }
     
   ]

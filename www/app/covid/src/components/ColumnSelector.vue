@@ -26,7 +26,7 @@ export default {
         }
     },
     created(){
-        console.log(this.colDefs);
+        // console.log(this.colDefs);
     },
     watch:{
         colDefs(newVal){

@@ -2,18 +2,27 @@
   <div>
     <table class="status-detail">
       <tr>
-        <th class="status-detail">Confirmed</th>
+        <th class="status-detail">
+          Confirmed Trend
+          <i class="fas fa-info-circle" :title="help.confirmed" />
+        </th>
         <td class="status-detail" :class="calcStatus(oy.confTrend)">{{formatTrend(oy.confTrend)}}</td>
       </tr>
       <tr>
-        <th class="status-detail">% Positive</th>
+        <th class="status-detail">
+          % Positive Trend
+          <i class="fas fa-info-circle" :title="help.ppositive" />
+        </th>
         <td
           class="status-detail"
           :class="calcStatus(oyRec.ppositiveTrend)"
         >{{formatTrend(oy.ppositiveTrend)}}</td>
       </tr>
       <tr>
-        <th class="status-detail">Deaths</th>
+        <th class="status-detail">
+          Deaths Trend
+          <i class="fas fa-info-circle" :title="help.deaths" />
+        </th>
         <td
           class="status-detail"
           :class="calcStatus(oy.deathsTrend)"
@@ -27,7 +36,13 @@ export default {
   props: ["oyStatus", "oyRec"],
   data() {
     return {
-      oy: this.oyRec
+      oy: this.oyRec,
+      help: {
+        ppositive:
+          "Change in % of tests for Covid19 that returned a positive result (i.e., tests showing that person being tested DOES HAVE the Covid19 disease)",
+        confirmed: "Change in growth rate of number of cases of Covid19 confirmed during this period",
+        deaths: "Change in growth rate of number of deaths attributed to Covid19 during this period"
+      }
     };
   },
   watch: {

@@ -30,7 +30,6 @@
 const headerRoutes = [
 
  {name:'nations-static',label:'Static Feed'},
- {name:'nations',label:'Dynamic Feed'},
  {name:'combined-grid',label:'Combined Data'},
   
 ];

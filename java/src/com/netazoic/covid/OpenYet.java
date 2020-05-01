@@ -108,10 +108,7 @@ public class OpenYet extends ServENT {
 
 	public enum CVD_Route{
 		home("/home","Show home page"),
-		admin("/cvd/admin","Admin home page"),
-		retrieveData("/cvd/retrieveData", "Retrieve Data"),
-		retrieveALLData("/cvd/retrieveALLData","Retrieve all remote data"),
-		createCombinedData("/cvd/createCombinedData", "Create combined data recs"),
+
 		getCountryData("/cvd/getData/countries", "Get country table"),
 		getOpenYet("/cvd/getData/getOpenYet","Get data for the 'Open Yet?' page"),
 		getStateData("/cvd/getData/states","Get state table"),

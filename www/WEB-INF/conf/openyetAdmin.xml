@@ -6,9 +6,13 @@
 	
 	<servlet-mapping>
 		<servlet-name>OpenYetAdmin</servlet-name>
+		<url-pattern>/cvd</url-pattern>
+		<url-pattern>/cvd/*</url-pattern>
 		<url-pattern>/cvd/admin</url-pattern>
+		<url-pattern>/cvd/admin/</url-pattern>
 		<url-pattern>/cvd/admin/*</url-pattern>
 		<url-pattern>/admin</url-pattern>
+		<url-pattern>/admin/</url-pattern>
 		<url-pattern>/admin/*</url-pattern>
 	</servlet-mapping>
 

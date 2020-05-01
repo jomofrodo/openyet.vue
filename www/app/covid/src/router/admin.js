@@ -19,6 +19,10 @@ export default new Router({
       path: "/grid/combined",
       name: "combined-grid",
       component: () => import("@/views/CombinedGrid")
+    },
+    {
+      path: "/cvd/admin",
+      name: "api"
     }
     
   ]

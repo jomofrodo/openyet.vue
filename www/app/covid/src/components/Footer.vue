@@ -2,10 +2,10 @@
   <footer>
     <div class="container">
       <router-link class="logo-font" :to="{ name: 'home', params: {} }">
-        covid19
+        OpenYet?
       </router-link>
       <span class="attribution">
-        An interactive learning project from
+        A data analysis project from
         <a rel="noopener noreferrer" target="blank" href="http://netazoic.com"
           >Netazoic</a
         >. Code &amp; design licensed under MIT.

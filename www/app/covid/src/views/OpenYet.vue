@@ -3,7 +3,9 @@
     <div id="asyncticator-mount"></div>
     <div>
       <h3>Open Yet?</h3>
-      <p>Are we open yet? The U.S. Federal government has come out with guidelines for determining when a region (State)</p>
+      <p>Are we ready to open yet? The U.S. Federal government has come out with <a href="https://www.whitehouse.gov/openingamerica/#criteria">guidelines</a> 
+      for determining when a region is ready to re-open. This site attempts to interpret those guidelines with available data in order to answer the question for given regions.
+      See our <router-link :to="{name: 'docs-methodology'}">methodology and rationale here.</router-link></p>
     </div>
     <div id="div-controls">
       <div class="control" style="width:20rem" id="cc">
@@ -390,7 +392,7 @@ export default {
     },
     calcTrend(d1,d2){
       let trend =  d1 + d2;
-      if(trend.indexOf(".")){
+      if(trend % 1 != 0){
       // if(trend != 0 && (trend < 1 && trend > -1)){
         //decimal
         trend = Math.round(trend*100,0);

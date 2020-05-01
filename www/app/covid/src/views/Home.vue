@@ -21,19 +21,11 @@
               </li>
               <li class="nav-item">
                 <router-link
-                  :to="{ name: 'nations' }"
-                  exact
-                  class="nav-link"
-                  active-class="active"
-                >Dynamic Feed</router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
                   :to="{ name: 'combined-grid' }"
                   exact
                   class="nav-link"
                   active-class="active"
-                >Combined Data</router-link>
+                >Time Series Data</router-link>
               </li>
             </ul>
           </div>

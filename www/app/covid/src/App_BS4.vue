@@ -10,7 +10,7 @@
             <Header/>
         </header> 
         <div class="col-12  order-last main"  :class="{'col-md-11':flgSidebar,'col-md-12':!flgSidebar}">
-            <div><input type="checkbox" v-model="flgSidebar"/></div>
+            <div v-if="false"><input type="checkbox" v-model="flgSidebar"/></div>
             <router-view></router-view>
         </div>
 

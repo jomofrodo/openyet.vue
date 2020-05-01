@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.ServletConfig;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -34,20 +35,24 @@ import com.netazoic.util.RemoteDataObj;
 import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
+@MultipartConfig
 public class OpenYetAdmin extends ServENT {
 
 	private static final Logger logger = LogManager.getLogger(OpenYetAdmin.class);
+	AdminHdlr adminHdlr;
 
 	@Override
 	public void init(ServletConfig config) throws javax.servlet.ServletException {
 		super.init(config);
 
-		defaultRoute = CVD_Route.home.route;
-		routeMap.put(CVD_Route.admin.route, new AdminHdlr());
-		routeMap.put(CVD_Route.retrieveData.route, new RemoteDataHdlr());
-		routeMap.put(CVD_Route.retrieveALLData.route, new RetrieveAllDataHdlr());
-		routeMap.put(CVD_Route.remoteDataStats.route, new RemoteDataStats());
-		routeMap.put(CVD_Route.createCombinedData.route, new CreateCombinedDataHdlr());
+		adminHdlr = new AdminHdlr();
+		defaultRoute = OYA_Route.admin.route;
+		routeMap.put(OYA_Route.admin.route, adminHdlr);
+		routeMap.put(OYA_Route.adminAlias.route, adminHdlr);
+		routeMap.put(OYA_Route.retrieveData.route, new RemoteDataHdlr());
+		routeMap.put(OYA_Route.retrieveALLData.route, new RetrieveAllDataHdlr());
+		routeMap.put(OYA_Route.remoteDataStats.route, new RemoteDataStats());
+		routeMap.put(OYA_Route.createCombinedData.route, new CreateCombinedDataHdlr());
 	}
 
 
@@ -147,6 +152,31 @@ public class OpenYetAdmin extends ServENT {
 		//        if(flgVerbose) System.out.println(msg);
 		logger.info(msg);
 		return msg;
+	}
+	
+	public enum OYA_Route{
+		admin("/admin","Admin home page"),
+		adminAlias("/cvd/admin","Alias to admin home page"),
+		retrieveData("/cvd/retrieveData", "Retrieve Data"),
+		retrieveALLData("/cvd/retrieveALLData","Retrieve all remote data"),
+		createCombinedData("/cvd/createCombinedData", "Create combined data recs"),
+		remoteDataStats("/cvd/remoteDataStats", "Get stats about remote data already retrieved"),
+		;
+
+		public String route;
+		public String desc;
+
+		OYA_Route(String r, String d){
+			route = r;
+			desc = d;
+		}
+		public static CVD_Route getRoute(String rs) {
+			for(CVD_Route r : CVD_Route.values()) {
+				if(r.route.equals(rs)) return r;
+			}
+			return null;
+		}
+
 	}
 
 	public class AdminHdlr extends RouteEO{
