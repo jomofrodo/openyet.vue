@@ -75,9 +75,9 @@ public class JH_US_Confirmed extends JH_US_TimeSeries implements ifDataSrcWrappe
 	}
 	
 	@Override
-	public Integer createCombinedRecs() throws Exception {
+	public Integer createCombinedRecs(LocalDate lastUpdate) throws Exception {
 		HashMap<String,Object> map = new HashMap<String,Object>();
-		LocalDate lastUpdate = this.getLastCombinedUpdate(this.dataSrc.getSrcCode(), con);
+		lastUpdate = this.getLastCombinedUpdate(this.dataSrc.getSrcCode(), con);
 		map.put(CVD_Param.sourceCode.name(), this.dataSrc.getSrcCode());
 		map.put(CVD_Param.lastUpdate.name(), lastUpdate.toString());
 		String q =  parseUtil.parseQuery(TP.sql_CREATE_COMBINED_RECS.tPath,map);

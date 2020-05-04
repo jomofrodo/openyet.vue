@@ -6,6 +6,7 @@ import java.net.HttpURLConnection;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -210,6 +211,7 @@ public class OpenYetAdmin extends ServENT {
 			String srcCode;
 			String dataSrc = (String) request.getAttribute(CVD_Param.dataSrc.name());
 			String[] dataSrcs = dataSrc.split(":");
+			LocalDate lastUpdate = getLastUpdateDate(null,con);
 			// Representative data sources
 			//			CVD_DataSrc[] dataSrcs = { CVD_DataSrc.JH_GLBL_CONF, CVD_DataSrc.JH_US_CONF};
 			//			CVD_DataSrc[] dataSrcs = { CVD_DataSrc.JH_GLBL_CONF};
@@ -225,8 +227,9 @@ public class OpenYetAdmin extends ServENT {
 						logger.info("Expired " + ctExpired + " existing combined records");
 						//						flgExpireRecords = false;
 					}
+					lastUpdate = getLastUpdateDate(src.srcCode,con);
 					logger.info("Create combined data for : " + src.srcCode);
-					ctCreated = updateCombinedData(rdo, con);
+					ctCreated = createCombinedData(lastUpdate,rdo, con);
 					ctTotalCreated += ctCreated;
 					logger.info("Finished with combined data for: " + src.desc);
 					logger.info("Created " + ctCreated + " combined records");
@@ -234,7 +237,7 @@ public class OpenYetAdmin extends ServENT {
 				}
 
 				logger.info("Creating increase stats");
-				createIncreaseStats(con);
+				createIncreaseStats(lastUpdate,con);
 
 				ctCreated = getCombinedRecordCount(con);
 				logger.info("Created " + ctTotalCreated + " total new combined records");
@@ -249,9 +252,12 @@ public class OpenYetAdmin extends ServENT {
 			}
 		}
 
-		private Integer createIncreaseStats(Connection con) throws Exception {
+		@SuppressWarnings("rawtypes")
+		private Integer createIncreaseStats(LocalDate lastUpdate, Connection con) throws Exception {
+			HashMap map = new HashMap();
+			map.put("lastUpdate", lastUpdate.toString());
 			String tp = CVD_TP.sql_CreateCombinedIncreaseStats.tPath;
-			String q = parseQuery(tp);
+			String q = parseQuery(tp,map);
 			Integer ct = SQLUtil.execSQL(q, con);
 			return ct;
 		}
@@ -263,6 +269,16 @@ public class OpenYetAdmin extends ServENT {
 			return ct;
 		}
 
+		protected LocalDate getLastUpdateDate(String srcCode, Connection con) throws SQLException {
+			// Get the date of the last update
+			LocalDate maxDate = null;
+			String q = "SELECT max(date) as maxDate FROM combined";
+			if(srcCode!=null) q += " WHERE sourcecode = '" + srcCode +"'";
+			String maxDateS = SQLUtil.execSQL(q, "maxDate", con);
+			if(maxDateS==null) maxDate =  LocalDate.parse("1970-01-01");
+			else maxDate = LocalDate.parse(maxDateS);
+			return maxDate;
+		}
 		private int expireCombinedRecords(Connection con) throws SQLException {
 			String q = "DELETE FROM covid.combined";
 			int ct = SQLUtil.execSQL(q, con);
@@ -270,12 +286,12 @@ public class OpenYetAdmin extends ServENT {
 
 		}	
 
-		private Integer updateCombinedData(RemoteDataObj rdo, Connection con) throws Exception {
+		private Integer createCombinedData(LocalDate lastUpdate,RemoteDataObj rdo, Connection con) throws Exception {
 			String tp = CVD_TP.sql_UpdateCombinedCountryCodes.tPath;
 			String q = parseQuery(tp);
 			SQLUtil.execSQL(q, con);
 
-			int ctCreated = rdo.createCombinedData();
+			int ctCreated = rdo.createCombinedData(lastUpdate);
 			logger.debug("Created " + ctCreated + " combined records");
 
 			// redo the combined countrycodes

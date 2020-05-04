@@ -108,8 +108,9 @@ public class JH_TimeSeries extends rdENT<ifDataSrcWrapper>{
 	}
 
 	@Override
-	public Integer createCombinedRecs() throws Exception {
+	public Integer createCombinedRecs(LocalDate lastUpdate) throws Exception {
 		HashMap map = new HashMap();
+		map.put("lastUpdate", lastUpdate.toString());
 		String q =  parseUtil.parseQuery(JH_TP.sql_CREATE_COMBINED_RECS.tPath,map);
 		return SQLUtil.execSQL(q, con);
 	}

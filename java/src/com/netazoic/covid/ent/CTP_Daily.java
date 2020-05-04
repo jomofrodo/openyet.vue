@@ -134,7 +134,7 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	}
 
 	@Override
-	public Integer createCombinedRecs() throws Exception {
+	public Integer createCombinedRecs(LocalDate lastUpdate) throws Exception {
 		HashMap map = new HashMap();
 		// We don't actually create new combined recs for CTP Daily data - we just update existing records
 		//		String q =  parseUtil.parseQueryFile(CTP_TP.sql_CREATE_COMBINED_RECS.tPath,map);

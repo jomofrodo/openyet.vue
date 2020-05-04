@@ -29,7 +29,13 @@ export default new Router({
       path: "/docs/methodology",
       name: "docs-methodology",
       component: () => import("@/views/docs/Methodology")
+    },
+    {
+      path:'/test/slope',
+      name: "slope-calc",
+      component: () => import("@/views/SlopeCalc")
     }
+
     
   ]
 });
