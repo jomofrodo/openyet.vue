@@ -117,6 +117,7 @@ import ColumnSelector from "../components/ColumnSelector.vue";
 import openYetDetail from "../components/OpenYet/openYetDetail.vue";
 import openYetGraph from "../components/OpenYet/openYetGraph.vue";
 import openYetSummary from "../components/OpenYet/openYetSummary.vue";
+import * as mathLib from "../lib/mathLib";
 import vueSelect from "vue-select";
 import * as commonOptions from "../grid/common-options";
 import * as util from "../lib/util.js";
@@ -133,6 +134,7 @@ const STATUS = {
   OPEN: { code: "OPEN", name: "Open" },
   CLOSED: { code: "CLOSED", name: "Closed" },
   TOPEN: { code: "TOPEN", name: "Trending Open" },
+  STATIC: { code: "STATIC", name: "Static" },
   NA: { code: "NA", name: "Not Applicable" }
 };
 
@@ -269,9 +271,9 @@ export default {
       //Need at least two of three trends to be less than zero for status open
       // Or one positive and two zeroes
 
-      const confTrend = oyRec.confTrend;
+      const confTrend = oyRec.confdTrend;
       const posTrend = oyRec.ppositiveTrend;
-      const deathsTrend = oyRec.deathsTrend;
+      const deathsTrend = oyRec.deathsdTrend;
       if(confTrend < 0 && (posTrend <= 0 || deathsTrend <= 0)) status = STATUS.OPEN;
       else if(posTrend < 0 && (deathsTrend <= 0 || confTrend <=0)) status = STATUS.OPEN;
       else if (deathsTrend < 0 && (confTrend <=0 || posTrend <= 0)) status = STATUS.OPEN;
@@ -345,19 +347,19 @@ export default {
     },
     oyRec(newVal) {
       const vm = this;
-      this.convertToNumbers(newVal); // Convert strings to numbers
+      // this.convertToNumbers(newVal); // Convert strings to numbers
       let oyRec = newVal;
-      oyRec.confTrend = this.calcTrend(
-        oyRec.confd1p,
-        oyRec.confd2p
+      oyRec.confdTrend = this.calcTrend(
+        "confd0",
+        oyRec.recs
       );
-      oyRec.ppositiveTrend = this.calcTrend(
-        oyRec.perc_positived1,
-        oyRec.perc_positived2
+      oyRec.ppositiveTrend = this.calcSum(
+        "ppositived0",
+        oyRec.recs
       );
-      oyRec.deathsTrend = this.calcTrend(
-        oyRec.deathd1p,
-        oyRec.deathd2p
+      oyRec.deathsdTrend = this.calcTrend(
+        "deathd0",
+        oyRec.recs
       );
       if(vm.flgDebug) console.log(oyRec);
     }
@@ -390,8 +392,26 @@ export default {
       const vm = this;
       //NOT IN USE
     },
-    calcTrend(d1,d2){
-      let trend =  d1 + d2;
+    calcSum(key,recs){
+      let sum = 0;
+      recs.forEach((rec,idx)=>{
+        sum += rec[key] - 0;
+      })
+      sum = Math.round(sum,0);
+      return sum;
+    },
+    calcTrend(key,recs){
+      // Get the Y values
+      let yVals = [], yValsConv = [];
+      let xVals = [];
+      recs.forEach((rec,idx)=>{
+        let val = rec[key];
+        yVals.push(val);
+        xVals.push(idx);
+      });
+      [xVals, yValsConv] = mathLib.findLineByLeastSquares(xVals, yVals);
+      const perc1 = (yValsConv[1] - yValsConv[0]) / yValsConv[0];
+      let trend =  perc1;
       if(trend % 1 != 0){
       // if(trend != 0 && (trend < 1 && trend > -1)){
         //decimal
@@ -497,8 +517,8 @@ export default {
           );
           return;
         }
-        const idx = rso.items.length - 1;
-        vm.oyRec = rso.items[idx];
+        rso.recs = rso.items;  //alias
+        vm.oyRec = rso;
       });
     },
     showAlert(msg) {

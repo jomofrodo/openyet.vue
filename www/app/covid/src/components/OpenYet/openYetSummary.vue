@@ -6,7 +6,7 @@
           Confirmed Trend
           <i class="fas fa-info-circle" :title="help.confirmed" />
         </th>
-        <td class="status-detail" :class="calcStatus(oy.confTrend)">{{formatTrend(oy.confTrend)}}</td>
+        <td class="status-detail" :class="calcStatus(oy.confdTrend)">{{formatTrend(oy.confdTrend)}}</td>
       </tr>
       <tr>
         <th class="status-detail">
@@ -25,8 +25,8 @@
         </th>
         <td
           class="status-detail"
-          :class="calcStatus(oy.deathsTrend)"
-        >{{formatTrend(oy.deathsTrend)}}</td>
+          :class="calcStatus(oy.deathsdTrend)"
+        >{{formatTrend(oy.deathsdTrend)}}</td>
       </tr>
     </table>
   </div>

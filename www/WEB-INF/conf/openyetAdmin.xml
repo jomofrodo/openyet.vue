@@ -1,6 +1,6 @@
 	<servlet>
 		<servlet-name>OpenYetAdmin</servlet-name>
-		<servlet-class>com.netazoic.covid.OpenYetAdmin</servlet-class>
+		<servlet-class>com.netazoic.covid.OYAdmin</servlet-class>
 		<load-on-startup>1</load-on-startup>
 	</servlet>
 	

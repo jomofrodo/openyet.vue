@@ -3,40 +3,38 @@
     <table class="data-detail">
       <tr>
         <th></th>
-        <th colspan="2">Value as of end of week</th>
-        <th colspan="3">Trend during week of</th>
+        <th colspan="1">Value as of</th>
+        <th colspan="14">Change vs Previous Day</th>
+        <th colspan="1">Value as of</th>
+        <th colspan="3">Trend</th>
       </tr>
       <tr>
         <th>Measure</th>
-        <th>{{week3}}</th>
-        <th>{{week1}}</th>
-        <th>{{week2}}</th>
-        <th>{{week1}}</th>
-        <th>2 Week Trend<br/>(% change in growth)</th>
+        <th>{{oy.recs[0].date}}</th>
+        <th v-for="rec in oy.recs" :key="rec.date">{{rec.date}}</th>
+        <th>{{oy.recs[13].date}}</th>
+        <th>2 Week Trend<br/>*Either change in growth rate or absolute trend</th>
       </tr>
       <tr>
         <th>confirmed <i class="fas fa-info-circle" :title="help.confirmed"/></th>
-        <td>{{conf_base + confd3}}</td>
-        <td>{{conf_now}}</td>
-        <td class="status" :class="calcStatus(oy.confd2p)">{{formatTrend(oy.confd2p,true,true)}}</td>
-        <td class="status" :class="calcStatus(oy.confd1p)">{{formatTrend(oy.confd1p,true,true)}}</td>
-        <td class="status" :class="calcStatus(oyRec.confTrend)">{{formatTrend(oyRec.confTrend,true)}}</td>
+        <td>{{oy.recs[0].confirmed}}</td>
+        <td v-for="rec in oy.recs" :key="rec.date">{{rec.confd0}}</td>
+        <td>{{oy.recs[13].confirmed}}</td>
+        <td class="status" :class="calcStatus(oy.confdTrend)">{{formatTrend(oy.confdTrend,true,true)}}</td>
       </tr>
       <tr>
         <th>% positive&nbsp;<i class="fas fa-info-circle" :title="help.ppositive"/></th>
-        <td>{{perc_positive_base + perc_positived3}}%</td>
-        <td>{{perc_positive_now}}%</td>
-        <td class="status" :class="calcStatus(perc_positived2)">{{formatTrend(perc_positived2,true)}}</td>
-        <td class="status" :class="calcStatus(perc_positived1)">{{formatTrend(perc_positived1,true)}}</td>
+        <td>{{oy.recs[0].ppositive}}%</td>
+        <td v-for="rec in oy.recs" :key="rec.date">{{rec.ppositived0}}%</td>
+        <td>{{oy.recs[13].ppositive}}</td>
         <td class="status" :class="calcStatus(oyRec.ppositiveTrend)">{{formatTrend(oyRec.ppositiveTrend,true)}}</td>
       </tr>
       <tr>
         <th>deaths <i class="fas fa-info-circle" :title="help.deaths"/></th>
-        <td>{{death_base + deathd3}}</td>
-        <td>{{death_now}}</td>
-        <td class="status" :class="calcStatus(deathd2p)">{{formatTrend(deathd2p,true,true)}}</td>
-        <td class="status" :class="calcStatus(deathd1p)">{{formatTrend(deathd1p,true,true)}}</td>
-        <td class="status" :class="calcStatus(oyRec.deathsTrend)">{{formatTrend(oyRec.deathsTrend,true)}}</td>
+        <td>{{oy.recs[0].death}}</td>
+        <td v-for="rec in oy.recs" :key="rec.date">{{rec.deathd0}}</td>
+        <td>{{oy.recs[13].death}}</td>
+        <td class="status" :class="calcStatus(oy.deathsdTrend)">{{formatTrend(oy.deathsdTrend,true,true)}}</td>
       </tr>
     </table>
   </div>
@@ -112,7 +110,7 @@ export default {
     },
     formatTrend(trend,isPerc,isDecimal) {
       if (trend === "n/a") return trend;
-      if((isDecimal)) trend = Math.round(trend*100,0);
+      // if((isDecimal)) trend = Math.round(trend*100,0);
       let trendStr = "";
       if (trend > 0) trendStr += "+";
       trendStr += trend;

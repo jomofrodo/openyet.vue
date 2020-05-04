@@ -1,19 +1,9 @@
-Math.slope = function(yVals) {
-    // let values_x = Object.keys(values_y); // just the numbers 0-n;
-    let xVals = [];
-    let sumY = 0;
-    // Object.keys(yVals).forEach(idx=>{
-    //     sumY += yVals[idx]-0;
-    // })
-    // let avg = sumY/yVals.length;
-    // let mult = 1;
-    // let r = avg/mult;
-    // while(r>mult){
-    //     mult = mult*10;
-    //     r = avg/mult;
-    // }
-    let mult = 1;
-    Object.keys(yVals).forEach(idx=> xVals.push((idx-0+1)*mult));
+Math.slope = function(xVals,yVals) {
+    if(!xVals){
+        const mult=1;
+        xVals = [];
+        Object.keys(yVals).forEach(idx=> xVals.push((idx-0+1)*mult));
+    }
     return getSlope(xVals, yVals);
 }
 

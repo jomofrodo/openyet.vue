@@ -37,9 +37,9 @@ import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
 @MultipartConfig
-public class OpenYetAdmin extends ServENT {
+public class OYAdmin extends ServENT {
 
-	private static final Logger logger = LogManager.getLogger(OpenYetAdmin.class);
+	private static final Logger logger = LogManager.getLogger(OYAdmin.class);
 	AdminHdlr adminHdlr;
 
 	@Override
