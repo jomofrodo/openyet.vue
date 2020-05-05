@@ -61,15 +61,10 @@
       </div>
     </div>
     <div id="open-yet-main" v-if="oyStatus.overallStatus">
-      <div id="main-status" class="flex-main">
-        <div
-          id="status-report"
-          class="status"
-          :class="oyStatus.overallStatus.code"
-        >{{oyStatus.overallStatus.name}}</div>
-      </div>
+
       <div id="open-yet-breakdown" class="flex-main">
-        <h4>2 Week Trend</h4>
+        <h4>2 Week Trend <div  class="status status-h4"
+                :class="oyStatus.overallStatus.code">{{oyStatus.overallStatus.name}}</div></h4>
         <b-tabs content-class="mt-3">
           <b-tab title="summary" active>
             <open-yet-summary :oyRec="oyRec" :oyStatus="oyStatus" />
@@ -81,6 +76,13 @@
             <open-yet-graph :oyRec="oyRec" />
           </b-tab>
         </b-tabs>
+      </div>
+      <div id="main-status" class="flex-main">
+        <div
+          id="status-report"
+          class="status"
+          :class="oyStatus.overallStatus.code"
+        >{{oyStatus.overallStatus.name}}</div>
       </div>
     </div>
 
@@ -274,10 +276,11 @@ export default {
       const confTrend = oyRec.confdTrend;
       const posTrend = oyRec.ppositiveTrend;
       const deathsTrend = oyRec.deathsdTrend;
-      if(confTrend < 0 && (posTrend <= 0 || deathsTrend <= 0)) status = STATUS.OPEN;
-      else if(posTrend < 0 && (deathsTrend <= 0 || confTrend <=0)) status = STATUS.OPEN;
-      else if (deathsTrend < 0 && (confTrend <=0 || posTrend <= 0)) status = STATUS.OPEN;
-      else if(posTrend ==0 && confTrend == 0 && deathsTrend == 0) status = STATUS.STATIC;
+      const overallScore = confTrend + posTrend + deathsTrend;
+
+      if(overallScore < -3 ) status = STATUS.OPEN;
+      else if(overallScore >=-3 && overallScore < -1) status = STATUS.TOPEN;
+      else if(overallScore >= -1 && overallScore < 1) status = STATUS.STATIC;
       else status = STATUS.CLOSED;
 
       oyStat.overallStatus = status;
@@ -401,14 +404,17 @@ export default {
       return sum;
     },
     calcTrend(key,recs){
-      // Get the Y values
+      // Get the LR slope of recs[key]
       let yVals = [], yValsConv = [];
       let xVals = [];
+      let sY = 0;
       recs.forEach((rec,idx)=>{
         let val = rec[key];
         yVals.push(val);
+        sY += val-0;
         xVals.push(idx);
       });
+      if(sY==0) return 0;
       [xVals, yValsConv] = mathLib.findLineByLeastSquares(xVals, yVals);
       const perc1 = (yValsConv[1] - yValsConv[0]) / yValsConv[0];
       let trend =  perc1;
@@ -519,6 +525,7 @@ export default {
         }
         rso.recs = rso.items;  //alias
         vm.oyRec = rso;
+        vm.oyRec.json = JSON.stringify(rso);
       });
     },
     showAlert(msg) {
@@ -584,6 +591,10 @@ div.control {
 label.control-label {
   font-size: 1.1em;
   font-weight: bold;
+}
+div.status-h4{
+  display:inline-block;
+  padding:7px;
 }
 i.alert-el {
   color: red;

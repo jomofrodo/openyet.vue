@@ -24,7 +24,7 @@ FROM( SELECT country,
 	sum(death) as death,
 	sum(deathincrease) as deathincrease,
 	to_date(substring(datechecked from 1 for 10),'YYYY-MM-DD') as date
-	
+
 	FROM ctp_statesdaily
 	WHERE 1=1 -- countrycode = 'USA'
 	AND state is not null AND state != ''
@@ -43,11 +43,15 @@ SET positive = v1.positive,
 	negative = v1.negative,
 	negativeincrease = v1.negativeincrease,
 	totaltestresults = v1.totaltestresults,
-	ppositive = v1.positive/v1.totaltestresults,
+	ppositive = v1.ppositive,
 	totaltestresultsincrease = v1.totaltestresultsincrease,
 	hospitalized = v1.hospitalized,
 	hospitalizedincrease = v1.hospitalizedincrease
 FROM (SELECT  *,
+	CASE 
+		WHEN totaltestresults = 0 THEN 0
+		ELSE positive/totaltestresults
+	END as ppositive,
 	to_date(substring(ctp.datechecked from 1 for 10),'YYYY-MM-DD') as date
 	FROM ctp_statesdaily ctp) v1
 	WHERE  v1.state = combined.statecode
