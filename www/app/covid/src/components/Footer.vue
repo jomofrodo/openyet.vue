@@ -8,7 +8,7 @@
         A data analysis project from
         <a rel="noopener noreferrer" target="blank" href="http://netazoic.com"
           >Netazoic</a
-        >. Code &amp; design licensed under MIT.
+        >.
       </span>
     </div>
   </footer>

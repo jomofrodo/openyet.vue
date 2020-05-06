@@ -15,6 +15,10 @@ export default new Router({
       name: "home-alias",
       component: () => import("@/views/OpenYet")
     },
+    { path: "/summary-grid",
+      name: "summary-grid",
+      component: () => import("@/views/SummaryGrid")
+    },
     {
       path: "/nations/static",
       name: "nations-static",

@@ -56,38 +56,40 @@
           </div>
         </td>
         <td>{{oy.recs[13].confirmed}}</td>
-        <td
-          class="status"
-          :class="calcStatus(oy.confdTrend)"
-        >{{formatTrend(oy.confdTrend,true,true)}}</td>
+        <td v-if="flgDeltaRate" class="status" :class="calcStatus(oy.confdTrend)">
+          <span>{{formatTrend(oy.confdTrend,true,true)}}</span>
+        </td>
+        <td v-if="flgDeltaPercent" class="status" :class="calcStatus(oy.confTrend)">
+          <span>{{formatTrend(oy.confTrend,true,true)}}</span>
+        </td>
       </tr>
       <tr v-if="!hasTesting">
         <th>
           % positive&nbsp;
           <i v-if="flgDebug" class="fas fa-info-circle" :title="help.ppositive" />
         </th>
-           <td>n/a</td>
-          <td v-for="rec in oy.recs" :key="rec.date">n/a</td>
-          <td>n/a</td>
-          <td>n/a</td>
+        <td>n/a</td>
+        <td v-for="rec in oy.recs" :key="rec.date">n/a</td>
+        <td>n/a</td>
+        <td>n/a</td>
       </tr>
       <tr v-if="hasTesting">
         <th>
           % positive&nbsp;
           <i v-if="flgDebug" class="fas fa-info-circle" :title="help.ppositive" />
         </th>
-          <td>{{oy.recs[0].ppositive}}%</td>
-          <td
-            v-for="rec in oy.recs"
-            :key="rec.date"
-            class="status change-status"
+        <td>{{oy.recs[0].ppositive}}%</td>
+        <td v-for="rec in oy.recs" :key="rec.date">
+          <div
+            class="status change-status delta large"
             :class="calcPercChangeStatus(rec.ppositived0)"
-          >{{rec.ppositived0}}%</td>
-          <td>{{oy.recs[13].ppositive}}%</td>
-          <td
-            class="status"
-            :class="calcStatus(oyRec.ppositiveTrend)"
-          >{{formatTrend(oyRec.ppositiveTrend,true)}}</td>
+          >{{rec.ppositived0}}%</div>
+        </td>
+        <td>{{oy.recs[13].ppositive}}%</td>
+        <td
+          class="status"
+          :class="calcStatus(oyRec.ppositiveTrend)"
+        >{{formatTrend(oyRec.ppositiveTrend,true)}}</td>
       </tr>
       <tr>
         <th>
@@ -103,10 +105,12 @@
           </div>
         </td>
         <td>{{oy.recs[13].death}}</td>
-        <td
-          class="status"
-          :class="calcStatus(oy.deathsdTrend)"
-        >{{formatTrend(oy.deathsdTrend,true,true)}}</td>
+        <td v-if="flgDeltaRate" class="status" :class="calcStatus(oy.deathsdTrend)">
+          <span>{{formatTrend(oy.deathsdTrend,true,true)}}</span>
+        </td>
+        <td v-if="flgDeltaPercent" class="status" :class="calcStatus(oy.deathsTrend)">
+          <span>{{formatTrend(oy.deathsTrend,true,true)}}</span>
+        </td>
       </tr>
     </table>
   </div>
@@ -135,22 +139,21 @@ export default {
       return this.oyRec;
     },
     hasTesting() {
-      if(!this.oy.recs) return false;
+      if (!this.oy.recs) return false;
       const rec = this.oy.recs[0];
-      if (rec.countrycode == "USA" && rec.county == null)
-        return true;
+      if (rec.countrycode == "USA" && rec.county == null) return true;
       else return false;
     },
-    endingDate(){
+    endingDate() {
       const oy = this.oy;
-      if(!oy.recs) return "n/a";
+      if (!oy.recs) return "n/a";
       const idx = oy.recs.length - 1;
       return oy.recs[idx].date;
     },
-    openingDate(){
+    openingDate() {
       const oy = this.oy;
-      if(!oy.recs) return "n/a";
-      return oy.recs[0].date
+      if (!oy.recs) return "n/a";
+      return oy.recs[0].date;
     }
   },
   created() {},
@@ -238,12 +241,15 @@ td.status.OPEN {
 }
 td.status.CLOSED {
   background-color: red;
-  color: grey;
+  color: white;
 }
 .delta {
   display: inline-block;
   padding: 3px;
   font-size: 0.7em;
+}
+.delta.large{
+  font-size: 0.9em;
 }
 div.explainer {
   display: inline-block;

@@ -3,15 +3,9 @@
     <div id="asyncticator-mount"></div>
     <div>
       <h3>Open Yet?</h3>
-      <p>
-        Are we ready to open yet? The U.S. Federal government has come out with
-        <a
-          href="https://www.whitehouse.gov/openingamerica/#criteria"
-        >guidelines</a>
-        for determining when a region is ready to re-open. This site attempts to interpret those guidelines with available data in order to answer the question for given regions.
-        See our
-        <router-link :to="{name: 'docs-methodology'}">methodology and rationale here.</router-link>
-      </p>
+      <p>Are we ready to open yet? The U.S. Federal government has come out with <a href="https://www.whitehouse.gov/openingamerica/#criteria">guidelines</a> 
+      for determining when a region is ready to re-open. This site attempts to interpret those guidelines with available data in order to answer the question for given regions.
+      See our <router-link :to="{name: 'docs-methodology'}">methodology and rationale here.</router-link></p>
     </div>
     <div id="div-controls">
       <div class="control" style="width:20rem" id="cc">
@@ -66,38 +60,18 @@
         ></vue-select>
       </div>
     </div>
-    <div id="open-yet-main" v-if="oyStatus.overallStatus">
-      <div id="open-yet-breakdown" class="flex-main">
-        <h4>
-          2 Week Trend
-          <div
-            class="status status-h4"
-            :class="oyStatus.overallStatus.code"
-          >{{oyStatus.overallStatus.name}}</div>
-        </h4>
-        <b-tabs content-class="mt-3">
-          <b-tab title="summary" active>
-            <open-yet-summary :oyRec="oyRec" :oyStatus="oyStatus" />
-          </b-tab>
-          <b-tab title="detail">
-            <open-yet-detail :oyRec="oyRec" />
-          </b-tab>
-          <b-tab title="graph">
-            <open-yet-graph :oyRec="oyRec" />
-          </b-tab>
-        </b-tabs>
-        <div class="explanatory">Data last updated: {{oyRec.date}}</div>
-      </div>
-      <div id="main-status" class="flex-main">
-        <div class="explanatory bold">Based on these metrics, the status for this country/region is:</div>
-        <div
-          id="status-report"
-          class="status"
-          :class="oyStatus.overallStatus.code"
-        >{{oyStatus.overallStatus.name}}</div>
+   
 
-        <MainStats :oyRec="oyRec" />
-      </div>
+    <div id="summary-grid">
+      <njs-grid
+        :gridCode="gridCode"
+        :gridID="gridCode"
+        :colDefs="colDefs"
+        :dataURL="urlSummaryData"
+        :pDefaultRec="defaultRec"
+        :p-filter="searchQuery"
+        :readOnly="flgReadOnly"
+      />
     </div>
 
     <!-- Alert Dialog -->
@@ -115,21 +89,19 @@
 
 <script>
 import Vue from "vue";
+import njsGrid from "../njsGrid/src/njsGrid.vue"; // local src
 import joModal from "../components/joModal.vue";
-import openYetDetail from "../components/OpenYet/openYetDetail.vue";
-import openYetGraph from "../components/OpenYet/openYetGraph.vue";
-import openYetSummary from "../components/OpenYet/openYetSummary.vue";
-import MainStats from "../components/OpenYet/MainStats.vue";
+import ColumnSelector from "../components/ColumnSelector.vue";
 import * as mathLib from "../lib/mathLib";
 import vueSelect from "vue-select";
 import * as commonOptions from "../grid/common-options";
 import * as util from "../lib/util.js";
-import * as math from "../lib/mathLib.js";
 
 // Font Awesome
 // Use a standard CDN load on the page that mounts the grid
 // CSS
 import "../css/modal.css";
+import "../css/grid.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 const defaultCell = { width: 200, type: "text" };
 
@@ -138,8 +110,7 @@ const STATUS = {
   CLOSED: { code: "CLOSED", name: "Closed" },
   TOPEN: { code: "TOPEN", name: "Trending Open" },
   STATIC: { code: "STATIC", name: "Static" },
-  NA: { code: "NA", name: "Not Applicable" },
-  UNKNOWN: { code: "UNKNOWN", name: "Unknown"}
+  NA: { code: "NA", name: "Not Applicable" }
 };
 
 const USA = { countrycode: "USA", name: "United States" };
@@ -148,10 +119,7 @@ export default {
   name: "OpenYet",
   components: {
     joModal,
-    openYetDetail,
-    openYetGraph,
-    openYetSummary,
-    MainStats,
+    njsGrid,
     vueSelect
   },
   props: [],
@@ -192,6 +160,7 @@ export default {
   mounted() {},
   created() {
     const vm = this;
+    this.initGrid();
     this.getCountries();
     this.getStates();
     this.getOpenYet();
@@ -227,6 +196,16 @@ export default {
       if (this.state && this.state.statecode) {
         return this.urlCounties + "?statecode=" + this.state.statecode;
       } else return null;
+    },
+    defaultRec() {
+      let rec = {};
+      const vm = this;
+      Object.keys(this.colDefs).forEach(function(idx) {
+        let col = vm.colDefs[idx];
+        rec[col.colName] = col.default;
+      });
+
+      return rec;
     },
     flgCounty() {
       return this.county && this.county.statecode != null;
@@ -268,10 +247,10 @@ export default {
       const posTrend = oyRec.ppositiveTrend;
       const deathsTrend = oyRec.deathsdTrend;
       const overallScore = confTrend + posTrend + deathsTrend;
-      if(isNaN(overallScore)) status = STATUS.UNKNOWN;
-      else if (overallScore < -3) status = STATUS.OPEN;
-      else if (overallScore >= -3 && overallScore < -1) status = STATUS.TOPEN;
-      else if (overallScore >= -1 && overallScore < 1) status = STATUS.STATIC;
+
+      if(overallScore < -3 ) status = STATUS.OPEN;
+      else if(overallScore >=-3 && overallScore < -1) status = STATUS.TOPEN;
+      else if(overallScore >= -1 && overallScore < 1) status = STATUS.STATIC;
       else status = STATUS.CLOSED;
 
       oyStat.overallStatus = status;
@@ -280,31 +259,20 @@ export default {
     urlSummaryData() {
       let url;
       // default is national summary
-      if (this.flgCounty)
-        url =
-          this.urlSummaryCounty +
-          "?countrycode=" +
-          this.country.countrycode +
-          "&statecode=" +
-          this.state.statecode;
-      else if (this.flgState)
-        url = this.urlSummaryState + "?countrycode=" + this.country.countrycode;
-      else
-        url =
-          this.urlSummaryNational + "?countrycode=" + this.country.countrycode;
+      if (this.flgCounty) url = this.urlSummaryCounty + "?countrycode=" + this.country.countrycode 
+        + "&statecode=" + this.state.statecode;
+      else if (this.flgState) url = this.urlSummaryState + "?countrycode=" +this.country.countrycode;
+      else url = this.urlSummaryNational + "?countrycode=" + this.country.countrycode;
       return url;
     }
   },
   watch: {
-    country(newVal) {
-      this.state = { name: null };
-      this.county = { county: null };
-    },
-    countries(newVal) {
-      this.getStates();
+    country(newVal){
+      this.state = {name:null};
+      this.county = {county:null};
     },
     state(newVal) {
-      this.county = { county: null };
+      this.county = {county:null};
     },
     statesURL(newVal) {
       if (!newVal) this.state = { name: null };
@@ -316,62 +284,114 @@ export default {
       if (!newVal) this.county = { county: null };
       else this.getCounties();
     },
+    colDefs(newVal) {
+      if (!newVal) return;
+      const vm = this;
+      const comopts = commonOptions || [];
+      newVal.forEach(function(col, idx) {
+        if (col.default) {
+          // parse defaults that start with a : -- these should be global variables in the scope of the grid
+          try {
+            if (col.default.substr && col.default.substr(0, 1) === ":") {
+              let strDefault = eval(col.default.slice(1));
+              if (strDefault) col.default = strDefault;
+            }
+          } catch (err) {
+            if(vm.flgDebug) console.log(col.default);
+            if(vm.flgDebug) console.log(err);
+          }
+        }
+        if (col.options) {
+          let optString = col.options;
+          if (vm.gridOptions) col.options = vm.gridOptions[optString];
+          if (typeof col.options !== "object") {
+            col.options = comopts[optString];
+          }
+        }
+      });
+    },
     dataURL(newVal) {
       if (newVal) {
         this.getOpenYet(newVal);
       }
     },
+    gridCode(newVal){
+      this.initGrid();
+    },
     oyRec(newVal) {
       const vm = this;
       // this.convertToNumbers(newVal); // Convert strings to numbers
       let oyRec = newVal;
-      oyRec.confdTrend = this.calcTrend("confd0", oyRec.recs);
-      oyRec.confTrend = this.calcTrend("confirmed", oyRec.recs);
-      oyRec.ppositiveTrend = this.calcSum("ppositived0", oyRec.recs);
-      oyRec.deathsdTrend = this.calcTrend("deathd0", oyRec.recs);
-      oyRec.deathsTrend = this.calcTrend("death", oyRec.recs);
-      if (vm.flgDebug) console.log(oyRec);
-      // main stats from last record in sequence
-      const lastRec = oyRec.recs[oyRec.recs.length - 1];
-      Object.keys(lastRec).forEach(key => {
-        oyRec[key] = lastRec[key];
-      });
+      oyRec.confdTrend = this.calcTrend(
+        "confd0",
+        oyRec.recs
+      );
+      oyRec.ppositiveTrend = this.calcSum(
+        "ppositived0",
+        oyRec.recs
+      );
+      oyRec.deathsdTrend = this.calcTrend(
+        "deathd0",
+        oyRec.recs
+      );
+      if(vm.flgDebug) console.log(oyRec);
     }
   },
 
   methods: {
+    async initGrid() {
+      const vm = this;
+      try {
+        this.gridOptions = require("../grid/coldefs/" +
+          this.gridCode +
+          "_options");
+      } catch (err) {
+        this.gridOptions = [];
+        // no options for this grid
+      }
+      // const defaultCell = gridDef.defaultCell;
+
+      await this.getColDefs(vm);
+      this.colDefs.forEach((c, i) => {
+        if (defaultCell) {
+          if (!c.width) Vue.set(c, "width", defaultCell.width);
+          if (!c.type) Vue.set(c, "type", defaultCell.type);
+        }
+        if (!c.hidden) Vue.set(c, "hidden", false);
+        Vue.set(c, "isVisible", !c.hidden);
+      });
+    },
     initOpts() {
       const vm = this;
       //NOT IN USE
     },
-    calcSum(key, recs) {
+    calcSum(key,recs){
       let sum = 0;
-      recs.forEach((rec, idx) => {
+      recs.forEach((rec,idx)=>{
         sum += rec[key] - 0;
-      });
-      sum = Math.round(sum, 0);
+      })
+      sum = Math.round(sum,0);
       return sum;
     },
-    calcTrend(key, recs) {
+    calcTrend(key,recs){
       // Get the LR slope of recs[key]
-      let yVals = [],
-        yValsConv = [];
+      let yVals = [], yValsConv = [];
       let xVals = [];
       let sY = 0;
-      recs.forEach((rec, idx) => {
+      recs.forEach((rec,idx)=>{
         let val = rec[key];
         yVals.push(val);
-        sY += val - 0;
+        sY += val-0;
         xVals.push(idx);
       });
-      if (sY == 0) return 0;
+      if(sY==0) return 0;
       [xVals, yValsConv] = mathLib.findLineByLeastSquares(xVals, yVals);
       const perc1 = (yValsConv[1] - yValsConv[0]) / yValsConv[0];
-      let trend = perc1;
-      if (trend % 1 != 0) {
-        // if(trend != 0 && (trend < 1 && trend > -1)){
+      let trend =  perc1;
+      if(trend % 1 != 0){
+      // if(trend != 0 && (trend < 1 && trend > -1)){
         //decimal
-        trend = Math.round(trend * 100, 0);
+        trend = Math.round(trend*100,0);
       }
       return trend;
     },
@@ -384,10 +404,28 @@ export default {
         if (numVal != NaN) oyRec[k] = numVal;
       });
     },
+    getColDefs: async vm => {
+      // by default, get the columnDefs from local static definition file in /gridcoldefs/<gridCode>.js
+      // Can override with a the db grid.gridcolumns table
+      // by setting srcColDefs prop to "api"
+      const src = vm.srcColDefs ? vm.srcColDefs : "local";
+      if (src == "local") {
+        let gridDef = require("../grid/coldefs/" + vm.gridCode);
+        //let gridDef = [];
+        vm.colDefs = gridDef.colDefs;
+        return;
+      } else {
+        // src is from the api
+        const url = vm.urlColDefs + "&gridCode=" + vm.gridCode;
+        return vm.$http.get(url).then(function(resp) {
+          // Do something here to convert response into colDefs;
+        });
+      }
+    },
     getCountries() {
       const vm = this;
       const countries = this.getLocalStorage("countries.json");
-      if (countries && countries.length) vm.countries = countries;
+      if (countries) vm.countries = countries;
       else {
         util
           .getData(vm.urlCountries, vm)
@@ -428,11 +466,10 @@ export default {
     getStates() {
       const vm = this;
       if (!this.statesURL) return null;
-      if (!this.country.countrycode) return null;
       const states = this.getLocalStorage(
         this.country.countrycode + "-states.json"
       );
-      if (states && states.length) vm.states = states;
+      if (states) vm.states = states;
       else {
         util
           .getData(this.statesURL, vm)
@@ -450,32 +487,19 @@ export default {
       util.getData(this.dataURL, vm).then(rso => {
         // items will be country,[state],[county]
         if (!rso.items) {
-          if (vm.flgDebug)
-            console.log(
-              "Error while retrieving OpenYet data: no items returned: " +
-                vm.dataURL
-            );
+          if(vm.flgDebug) console.log(
+            "Error while retrieving OpenYet data: no items returned: " +
+              vm.dataURL
+          );
           return;
         }
-        // Sanity check
-        const ct = rso.items.length;
-        if(ct!=14){
-          console.log("Error condition for data returned by url: " + this.dataURL);
-          rso.recs = [];
-          for(let idx = 0; idx<14; idx++){
-            rso.recs.push({confirmed:"n/a",death:"n/a"})
-          }
-        }
-        else rso.recs = rso.items; //alias
+        rso.recs = rso.items;  //alias
         vm.oyRec = rso;
         vm.oyRec.json = JSON.stringify(rso);
       });
     },
-    niceNumber(num) {
-      return math.niceNumber(num);
-    },
     showAlert(msg) {
-      if (this.flgDebug) console.log(msg);
+      if(this.flgDebug) console.log(msg);
       msg = msg.replace(/\n/g, "<br />");
       msg = msg.replace(/\\r\\n/g, "<br />");
       msg = msg.replace(/\\n/g, "<br />");
@@ -516,23 +540,19 @@ export default {
   margin-top: 10px;
   margin-left: 30px;
 }
-div#open-yet-main {
+div#open-yet-main{
   min-height: 50vh;
 }
-div#summary-grid {
+div#summary-grid{
   min-height: 20vh;
   max-height: 80vh;
 }
 div#div-controls {
   display: flex;
 }
-table#njs-grid {
+table#njs-grid{
   max-height: 40vh;
-  overflow: auto;
-}
-div.main-status-stats label {
-  font-weight: bold;
-  min-width: 150px;
+  overflow:auto;
 }
 div.control {
   flex: 0 1 auto;
@@ -542,9 +562,9 @@ label.control-label {
   font-size: 1.1em;
   font-weight: bold;
 }
-div.status-h4 {
-  display: inline-block;
-  padding: 7px;
+div.status-h4{
+  display:inline-block;
+  padding:7px;
 }
 i.alert-el {
   color: red;
@@ -598,12 +618,6 @@ table.status-detail {
 td.status-detail,
 th.status-detail {
   padding: 10px;
-}
-.explanatory {
-  font-size: 0.9em;
-}
-.explanatory.bold {
-  font-weight: bold;
 }
 /*   STATUS classes */
 .OPEN {

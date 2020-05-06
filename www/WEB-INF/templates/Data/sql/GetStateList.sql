@@ -2,6 +2,7 @@
 SELECT ansi as statecode, name, 0 as idx,countrycode
 FROM state
 WHERE countrycode = '{{countrycode}}'
+AND population >= 0
 {{/if}}
 {{#unless countrycode}}
 SELECT ansi as statecode, name, 0 as idx, countrycode

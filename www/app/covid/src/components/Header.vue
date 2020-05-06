@@ -29,6 +29,7 @@
 <script>
 const headerRoutes = [
 
+ {name: 'summary-grid', label: 'Summary Grid'},
  {name:'nations-static',label:'Static Feed'},
  {name:'combined-grid',label:'Combined Data'},
   
