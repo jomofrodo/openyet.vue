@@ -6,7 +6,7 @@
           Confirmed Trend
           <i class="fas fa-info-circle" :title="help.confirmed" />
         </th>
-        <td class="status-detail" :class="calcStatus(oy.confdTrend)">{{formatTrend(oy.confdTrend)}}</td>
+        <td class="status-detail" :class="calcStatus(oy.confTrend)">{{formatTrend(oy.confTrend)}}</td>
       </tr>
       <tr>
         <th class="status-detail">
@@ -15,8 +15,10 @@
         </th>
         <td
           class="status-detail"
-          :class="calcStatus(oyRec.ppositiveTrend)"
-        >{{formatTrend(oy.ppositiveTrend)}}</td>
+          :class="calcStatus(oyRec.pposTrend)"
+        ><span v-if="!isNaN(oy.pposTrend-0)">{{formatTrend(oy.pposTrend)}}%</span>
+          <span v-if="isNaN(oy.pposTrend)">n/a</span>
+        </td>
       </tr>
       <tr>
         <th class="status-detail">
@@ -25,8 +27,8 @@
         </th>
         <td
           class="status-detail"
-          :class="calcStatus(oy.deathsdTrend)"
-        >{{formatTrend(oy.deathsdTrend)}}</td>
+          :class="calcStatus(oy.deathsTrend)"
+        >{{formatTrend(oy.deathsTrend)}}</td>
       </tr>
     </table>
   </div>
@@ -40,8 +42,8 @@ export default {
       help: {
         ppositive:
           "Change in % of tests for Covid19 that returned a positive result (i.e., tests showing that person being tested DOES HAVE the Covid19 disease)",
-        confirmed: "Change in growth rate of number of cases of Covid19 confirmed during this period",
-        deaths: "Change in growth rate of number of deaths attributed to Covid19 during this period"
+        confirmed: "Change in growth rate of number of cases per day of Covid19 confirmed during this period",
+        deaths: "Change in growth rate of number of deaths per day attributed to Covid19 during this period"
       }
     };
   },
@@ -61,7 +63,7 @@ export default {
       let trendStr = "";
       if (trend > 0) trendStr += "+";
       trendStr += trend;
-      trendStr += "%";
+      // trendStr += "%";
       return trendStr;
     }
   }

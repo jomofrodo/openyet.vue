@@ -18,12 +18,24 @@
           {{slope}}
         </div>
         <div>
-        <label>Ln Slope:</label>
+          <label>Ln Slope:</label>
           {{lnSlope}}
         </div>
         <div>
           <label>Slope %:</label>
           {{slopePerc}}
+        </div>
+        <div>
+          <label>Slope Check:</label>
+          {{slopeCheck}}
+        </div>
+        <div>
+          <label>Intercept:</label>
+          {{intercept}}
+        </div>
+        <div>
+          <label>Correlation (r^2):</label>
+          {{correlation}}
         </div>
         <div>
           <label>x-vals:</label>
@@ -46,24 +58,54 @@ export default {
       yVals: [],
       y_values_input: "",
       slope: "Enter y values",
+      slopeCheck: 0,
+      intercept: 0,
+      correlation: 0,
+      significance: 0,
       lnSlope: 0,
       slopePerc: 0
     };
   },
   methods: {
     calcSlope() {
+      const M = Math;
       let yValsInput = this.y_values_input.trim();
       //Strip quotes
       yValsInput = yValsInput.replace(/['"]/g, "");
       let yVals = yValsInput.split("\n");
 
-      this.slope = Math.slope(yVals);
+      let slope = Math.slope(null, yVals);
       let xVals = [];
       Object.keys(yVals).forEach(idx => xVals.push(idx - 0 + 1));
+
+      let rVals = mathLib.getCorrelation(xVals,yVals);
+            /*
+          ret.correlation = cor;
+          ret.intercept = inter;
+          ret.slope = slo;
+          ret.xMax = xmax;
+          ret.xMin = xmin;
+          ret.yMax = ymax;
+          ret.yMin = ymin;
+          ret.ctY = ctY;
+      */
+      let r2 = rVals.correlation;
+      let m = rVals.slope;
+      let b = rVals.intercept;
       let yValsConv = [];
-      [xVals, yValsConv] = mathLib.findLineByLeastSquares(xVals, yVals);
+      for (var i = 0; i < yVals.length; i++) {
+        let x = xVals[i];
+        let y = x * m + b;
+        yValsConv.push(y);
+      }
+      // [xVals, yValsConv] = mathLib.findLineByLeastSquares(xVals, yVals);
+
       this.xVals = xVals;
       this.yVals = yValsConv;
+      this.slope = M.round(slope*1000)/1000;
+      this.slopeCheck = M.round(m*1000)/1000;
+      this.intercept = M.round(b*1000)/1000;
+      this.correlation = M.round(r2*1000)/1000;
     },
     calcLogSlope() {
       let yValsInput = this.y_values_input.trim();
@@ -79,11 +121,13 @@ export default {
       Object.keys(yVals).forEach(idx => {
         yValsLog[idx] = Math.log(yVals[idx]);
       });
-      this.lnSlope = Math.slope(yValsLog);
+      let lnSlope = Math.slope(null,yValsLog);
       let xVals = [];
       Object.keys(yVals).forEach(idx => xVals.push(idx - 0));
       let yValsConv = [];
       [xVals, yValsConv] = mathLib.findLineByLeastSquares(xVals, yValsLog);
+      
+      this.lnSlope = Math.round(lnSlope*1000)/1000;
       this.xVals = xVals;
       this.yVals = yValsConv;
     },
@@ -92,9 +136,9 @@ export default {
       let perc1 = (this.yVals[1] - this.yVals[0]) / this.yVals[0];
       const ct = this.yVals.length;
       const first = this.yVals[0];
-      const last = this.yVals[ct-1];
-      let perc2 = ((last-first)/first)/ct;
-      this.slopePerc = perc2;
+      const last = this.yVals[ct - 1];
+      let perc2 = (last - first) / first / ct;
+      this.slopePerc = Math.round(perc2*1000)/1000 * 100;
     }
   }
 };

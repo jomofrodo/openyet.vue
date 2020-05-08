@@ -38,6 +38,11 @@ export default new Router({
       path:'/test/slope',
       name: "slope-calc",
       component: () => import("@/views/SlopeCalc")
+    },
+    {
+      path:'/test/correlation',
+      name:'correlation-calc',
+      component: ()=> import("@/views/CorrelationCalc")
     }
 
     

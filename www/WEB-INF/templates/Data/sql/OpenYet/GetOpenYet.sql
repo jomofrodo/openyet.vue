@@ -27,6 +27,6 @@ AND statecode = '{{statecode}}'
 )voy
 
 WHERE 1 = 1
-AND date > (SELECT max(date) FROM combined) - interval '14 days'
+AND date > (SELECT max(date) FROM combined) - interval '28 days'
 --AND date > to_date('{{lastUpdate}}','mm/dd/yyyy') - interval '14 days'
 ORDER BY idx, date

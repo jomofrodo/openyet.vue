@@ -80,7 +80,7 @@
             <open-yet-summary :oyRec="oyRec" :oyStatus="oyStatus" />
           </b-tab>
           <b-tab title="detail">
-            <open-yet-detail :oyRec="oyRec" />
+            <open-yet-detail2 :oyRec="oyRec" />
           </b-tab>
           <b-tab title="graph">
             <open-yet-graph :oyRec="oyRec" />
@@ -116,11 +116,12 @@
 <script>
 import Vue from "vue";
 import joModal from "../components/joModal.vue";
-import openYetDetail from "../components/OpenYet/openYetDetail.vue";
+import openYetDetail2 from "../components/OpenYet/openYetDetail2.vue";
 import openYetGraph from "../components/OpenYet/openYetGraph.vue";
 import openYetSummary from "../components/OpenYet/openYetSummary.vue";
 import MainStats from "../components/OpenYet/MainStats.vue";
 import * as mathLib from "../lib/mathLib";
+import * as lt from "../lib/libTrend";
 import vueSelect from "vue-select";
 import * as commonOptions from "../grid/common-options";
 import * as util from "../lib/util.js";
@@ -139,7 +140,7 @@ const STATUS = {
   TOPEN: { code: "TOPEN", name: "Trending Open" },
   STATIC: { code: "STATIC", name: "Static" },
   NA: { code: "NA", name: "Not Applicable" },
-  UNKNOWN: { code: "UNKNOWN", name: "Unknown"}
+  UNKNOWN: { code: "UNKNOWN", name: "Unknown" }
 };
 
 const USA = { countrycode: "USA", name: "United States" };
@@ -148,7 +149,7 @@ export default {
   name: "OpenYet",
   components: {
     joModal,
-    openYetDetail,
+    openYetDetail2,
     openYetGraph,
     openYetSummary,
     MainStats,
@@ -157,6 +158,7 @@ export default {
   props: [],
   data: function() {
     return {
+      appName: "OpenYet",
       country: USA,
       state: { name: "-- select a state --" },
       county: { county: "-- select a county --" },
@@ -257,18 +259,19 @@ export default {
     },
     oyStatus() {
       // compute status based on data in the oyRec
-      let oyRec = this.oyRec;
-      if (!oyRec || Object.keys(oyRec).length == 0) return {};
+      const oy = this.oyRec;
+      if (!oy || Object.keys(oy).length == 0) return {};
       let oyStat = {};
       let status;
       //Need at least two of three trends to be less than zero for status open
       // Or one positive and two zeroes
 
-      const confTrend = oyRec.confdTrend;
-      const posTrend = oyRec.ppositiveTrend;
-      const deathsTrend = oyRec.deathsdTrend;
-      const overallScore = confTrend + posTrend + deathsTrend;
-      if(isNaN(overallScore)) status = STATUS.UNKNOWN;
+      // const confTrend = oyRec.confdTrend;
+      // const posTrend = oyRec.ppositiveTrend;
+      // const deathsTrend = oyRec.deathsdTrend;
+      let overallScore = oy.confTrendPerc - 0 + (oy.deathsTrendPerc - 0);
+      if (!isNaN(oy.pposTrendPerc-0)) overallScore += +(oy.pposTrendPerc - 0);
+      if (isNaN(overallScore)) status = STATUS.UNKNOWN;
       else if (overallScore < -3) status = STATUS.OPEN;
       else if (overallScore >= -3 && overallScore < -1) status = STATUS.TOPEN;
       else if (overallScore >= -1 && overallScore < 1) status = STATUS.STATIC;
@@ -323,13 +326,51 @@ export default {
     },
     oyRec(newVal) {
       const vm = this;
+      const oy = this.oyRec;
       // this.convertToNumbers(newVal); // Convert strings to numbers
       let oyRec = newVal;
-      oyRec.confdTrend = this.calcTrend("confd0", oyRec.recs);
-      oyRec.confTrend = this.calcTrend("confirmed", oyRec.recs);
-      oyRec.ppositiveTrend = this.calcSum("ppositived0", oyRec.recs);
-      oyRec.deathsdTrend = this.calcTrend("deathd0", oyRec.recs);
-      oyRec.deathsTrend = this.calcTrend("death", oyRec.recs);
+      // Calculate 3 sets of trends -
+      //  baseline: 28 - 15 days ago
+      //  week 1: 14-8 days ago
+      //  week 2: 7 days ago through now
+      // For each set, calculate:
+      //  confirmed trend
+      //  ppositive trend
+      //  deaths trend
+      // oyRec.confdTrend = this.calcTrend("confd0", oyRec.recs);
+      // oyRec.confTrend = this.calcTrend("confirmed", oyRec.recs);
+      // oyRec.ppositiveTrend = this.calcSum("ppositived0", oyRec.recs);
+      // oyRec.deathsdTrend = this.calcTrend("deathd0", oyRec.recs);
+      // oyRec.deathsTrend = this.calcTrend("death", oyRec.recs);
+      const recsBL = oy.recs.slice(0, 14);
+      const recsWeek1 = oy.recs.slice(14, 21);
+      const recsWeek2 = oy.recs.slice(21);
+      oy.confT_bl = lt.calcTrend("confirmed", recsBL);
+      oy.confT_w1 = lt.calcTrend("confirmed", recsWeek1, oy.confT_bl);
+      oy.confT_w2 = lt.calcTrend("confirmed", recsWeek2, oy.confT_bl);
+
+      oy.pposT_bl = lt.calcTrend("ppositive", recsBL);
+      oy.pposT_w1 = lt.calcTrend("ppositive", recsWeek1, oy.pposT_bl);
+      oy.pposT_w2 = lt.calcTrend("ppositive", recsWeek2, oy.pposT_bl);
+
+      oy.deathsT_bl = lt.calcTrend("death", recsBL);
+      oy.deathsT_w1 = lt.calcTrend("death", recsWeek1, oy.deathsT_bl);
+      oy.deathsT_w2 = lt.calcTrend("death", recsWeek2, oy.deathsT_bl);
+
+      let temp = new Number();
+      temp = (oy.confT_w1.trendDelta + oy.confT_w2.trendDelta) / 2;
+      oy.confTrend = temp.toFixed(0);
+      temp = (oy.confT_w1.trendPerc + oy.confT_w2.trendPerc) / 2;
+      oy.confTrendPerc = temp.toFixed(2);
+      temp = (oy.pposT_w1.yAvgDelta + oy.pposT_w2.yAvgDelta) / 2;
+      oy.pposTrend = temp.toFixed(2);
+      temp = (oy.pposT_w1.yAvgDPerc + oy.pposT_w2.yAvgDPerc) / 2;
+      oy.pposTrendPerc = temp.toFixed(2);
+      temp = (oy.deathsT_w1.trendDelta + oy.deathsT_w2.trendDelta) / 2;
+      oy.deathsTrend = temp.toFixed(0);
+      temp = (oy.deathsT_w1.trendPerc + oy.deathsT_w2.trendPerc) / 2;
+      oy.deathsTrendPerc = temp.toFixed(2);
+
       if (vm.flgDebug) console.log(oyRec);
       // main stats from last record in sequence
       const lastRec = oyRec.recs[oyRec.recs.length - 1];
@@ -352,29 +393,7 @@ export default {
       sum = Math.round(sum, 0);
       return sum;
     },
-    calcTrend(key, recs) {
-      // Get the LR slope of recs[key]
-      let yVals = [],
-        yValsConv = [];
-      let xVals = [];
-      let sY = 0;
-      recs.forEach((rec, idx) => {
-        let val = rec[key];
-        yVals.push(val);
-        sY += val - 0;
-        xVals.push(idx);
-      });
-      if (sY == 0) return 0;
-      [xVals, yValsConv] = mathLib.findLineByLeastSquares(xVals, yVals);
-      const perc1 = (yValsConv[1] - yValsConv[0]) / yValsConv[0];
-      let trend = perc1;
-      if (trend % 1 != 0) {
-        // if(trend != 0 && (trend < 1 && trend > -1)){
-        //decimal
-        trend = Math.round(trend * 100, 0);
-      }
-      return trend;
-    },
+
     convertToNumbers() {
       //Convert oyRec strings to number vals
       const oyRec = this.oyRec;
@@ -386,7 +405,7 @@ export default {
     },
     getCountries() {
       const vm = this;
-      const countries = this.getLocalStorage("countries.json");
+      const countries = this.getLocalStorage("countries.json", this.appName);
       if (countries && countries.length) vm.countries = countries;
       else {
         util
@@ -394,7 +413,7 @@ export default {
           .then(rso => {
             // Write data to local storage'
             const recs = rso.items;
-            this.writeLocalStorage("countries.json", recs);
+            this.writeLocalStorage("countries.json", recs, vm.appName);
             vm.countries = recs;
           })
           .catch(err => alert(err));
@@ -404,7 +423,11 @@ export default {
       const vm = this;
       if (!this.statesURL) return null;
       let counties = this.getLocalStorage(
-        this.country.countrycode + "-" + this.state.statecode + "-counties.json"
+        this.country.countrycode +
+          "-" +
+          this.state.statecode +
+          "-counties.json",
+        this.appName
       );
       if (counties) vm.counties = counties;
       else {
@@ -418,7 +441,8 @@ export default {
                 "-" +
                 vm.state.statecode +
                 "-counties.json",
-              recs
+              recs,
+              vm.appName
             );
             vm.counties = recs;
           })
@@ -430,7 +454,8 @@ export default {
       if (!this.statesURL) return null;
       if (!this.country.countrycode) return null;
       const states = this.getLocalStorage(
-        this.country.countrycode + "-states.json"
+        this.country.countrycode + "-states.json",
+        this.appName
       );
       if (states && states.length) vm.states = states;
       else {
@@ -439,7 +464,11 @@ export default {
           .then(rso => {
             // Write data to local storage'
             const recs = rso.items;
-            vm.writeLocalStorage(vm.country.countrycode + "-states.json", recs);
+            vm.writeLocalStorage(
+              vm.country.countrycode + "-states.json",
+              recs,
+              vm.appName
+            );
             vm.states = recs;
           })
           .catch(err => alert(err));
@@ -459,14 +488,15 @@ export default {
         }
         // Sanity check
         const ct = rso.items.length;
-        if(ct!=14){
-          console.log("Error condition for data returned by url: " + this.dataURL);
+        if (ct != 28) {
+          console.log(
+            "Error condition for data returned by url: " + this.dataURL
+          );
           rso.recs = [];
-          for(let idx = 0; idx<14; idx++){
-            rso.recs.push({confirmed:"n/a",death:"n/a"})
+          for (let idx = 0; idx < 28; idx++) {
+            rso.recs.push({ confirmed: "n/a", death: "n/a" });
           }
-        }
-        else rso.recs = rso.items; //alias
+        } else rso.recs = rso.items; //alias
         vm.oyRec = rso;
         vm.oyRec.json = JSON.stringify(rso);
       });
@@ -487,20 +517,20 @@ export default {
       dlg.flg = !dlg.flg;
       //    this.dlgs[dlgID] = !this.dlgs[dlgID];
     },
-    clearLocalStorage() {
-      window.localStorage.setItem("openYet", "{}");
+    clearLocalStorage(appName) {
+      window.localStorage.setItem(appName, "{}");
     },
-    writeLocalStorage(key, val) {
-      let oyStorageRec = this.getLocalStorage();
-      oyStorageRec[key] = val;
-      window.localStorage.setItem("openYet", JSON.stringify(oyStorageRec));
+    writeLocalStorage(key, val, appName) {
+      let storageRec = this.getLocalStorage(null, appName);
+      storageRec[key] = val;
+      window.localStorage.setItem(appName, JSON.stringify(storageRec));
     },
-    getLocalStorage(key) {
-      const oyStorageJSON = window.localStorage.getItem("openYet");
-      if (oyStorageJSON == null) return {};
-      const oyStorageRec = JSON.parse(oyStorageJSON);
-      if (key) return oyStorageRec[key];
-      else return oyStorageRec;
+    getLocalStorage(key, appName) {
+      const storageJSON = window.localStorage.getItem(this.appName);
+      if (storageJSON == null) return {};
+      const storageRec = JSON.parse(storageJSON);
+      if (key) return storageRec[key];
+      else return storageRec;
     }
   }
 };
