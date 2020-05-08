@@ -30,3 +30,4 @@ www/app/covid/yarn-error.log
 /.gradle/
 build
 covid_db.tgz
+covid_db_combined.tgz

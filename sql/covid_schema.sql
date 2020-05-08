@@ -119,7 +119,14 @@ CREATE TABLE combined (
     recoveredincrease numeric(12,0),
     datechecked character varying(40),
     date date,
-    sourcecode character varying(25)
+    sourcecode character varying(25),
+    confd0 double precision,
+    ppositived0 double precision,
+    deathd0 double precision,
+    confd1 double precision,
+    ppositived1 double precision,
+    deathd1 double precision,
+    ppositive double precision
 );
 
 
@@ -138,6 +145,87 @@ COMMENT ON COLUMN combined.confirmed IS 'confirmed cases';
 
 COMMENT ON COLUMN combined.positive IS 'positive test results';
 
+
+--
+-- Name: COLUMN combined.confd0; Type: COMMENT; Schema: covid; Owner: covid
+--
+
+COMMENT ON COLUMN combined.confd0 IS 'confirmed delta (confirmed increase) current day';
+
+
+--
+-- Name: COLUMN combined.ppositived0; Type: COMMENT; Schema: covid; Owner: covid
+--
+
+COMMENT ON COLUMN combined.ppositived0 IS 'percent positive tests delta %';
+
+
+--
+-- Name: COLUMN combined.deathd0; Type: COMMENT; Schema: covid; Owner: covid
+--
+
+COMMENT ON COLUMN combined.deathd0 IS 'death delta %';
+
+
+--
+-- Name: COLUMN combined.confd1; Type: COMMENT; Schema: covid; Owner: covid
+--
+
+COMMENT ON COLUMN combined.confd1 IS 'conf delta % trend (daily)';
+
+
+--
+-- Name: COLUMN combined.ppositived1; Type: COMMENT; Schema: covid; Owner: covid
+--
+
+COMMENT ON COLUMN combined.ppositived1 IS 'perc positive delta % trend (daily)';
+
+
+--
+-- Name: COLUMN combined.deathd1; Type: COMMENT; Schema: covid; Owner: covid
+--
+
+COMMENT ON COLUMN combined.deathd1 IS 'death delta % trend';
+
+
+--
+-- Name: COLUMN combined.ppositive; Type: COMMENT; Schema: covid; Owner: covid
+--
+
+COMMENT ON COLUMN combined.ppositive IS 'percent of tests that result in a positive';
+
+
+--
+-- Name: combined_bak; Type: TABLE; Schema: covid; Owner: covid; Tablespace: 
+--
+
+CREATE TABLE combined_bak (
+    statecode character varying(5),
+    state character varying(128),
+    countrycode character varying(3),
+    country character varying(50),
+    county character varying(128),
+    confirmed numeric(12,0),
+    confirmedincrease integer,
+    positive numeric(12,0),
+    positiveincrease numeric(12,0),
+    negative numeric(12,0),
+    negativeincrease numeric(12,0),
+    totaltestresults numeric(12,0),
+    totaltestresultsincrease numeric(12,0),
+    hospitalized numeric(12,0),
+    hospitalizedincrease numeric(12,0),
+    death numeric(12,0),
+    deathincrease numeric(12,0),
+    recovered numeric(12,0),
+    recoveredincrease numeric(12,0),
+    datechecked character varying(40),
+    date date,
+    sourcecode character varying(25)
+);
+
+
+ALTER TABLE covid.combined_bak OWNER TO covid;
 
 --
 -- Name: country; Type: TABLE; Schema: covid; Owner: covid; Tablespace: 
@@ -178,6 +266,21 @@ COMMENT ON COLUMN country.population IS '2020 UN, in thousands';
 
 
 --
+-- Name: county; Type: TABLE; Schema: covid; Owner: covid; Tablespace: 
+--
+
+CREATE TABLE county (
+    countrycode character varying(3),
+    statecode character varying(5),
+    county character varying(128) NOT NULL,
+    population numeric(12,0),
+    state character varying(127)
+);
+
+
+ALTER TABLE covid.county OWNER TO covid;
+
+--
 -- Name: ctp_statesdaily; Type: TABLE; Schema: covid; Owner: covid; Tablespace: 
 --
 
@@ -200,6 +303,442 @@ CREATE TABLE ctp_statesdaily (
 
 
 ALTER TABLE covid.ctp_statesdaily OWNER TO covid;
+
+--
+-- Name: state; Type: TABLE; Schema: covid; Owner: covid; Tablespace: 
+--
+
+CREATE TABLE state (
+    name character varying(129) NOT NULL,
+    status character varying(56),
+    iso character varying(5),
+    ansi character varying(2),
+    usps character varying(10),
+    uscg character varying(4),
+    gpo character varying(22),
+    ap character varying(22),
+    other character varying(128),
+    countrycode character varying(5) NOT NULL,
+    population numeric(12,0)
+);
+
+
+ALTER TABLE covid.state OWNER TO covid;
+
+--
+-- Name: COLUMN state.countrycode; Type: COMMENT; Schema: covid; Owner: covid
+--
+
+COMMENT ON COLUMN state.countrycode IS 'ansi country code';
+
+
+--
+-- Name: COLUMN state.population; Type: COMMENT; Schema: covid; Owner: covid
+--
+
+COMMENT ON COLUMN state.population IS 'Estimated 2019';
+
+
+--
+-- Name: cv_county_current_summary; Type: VIEW; Schema: covid; Owner: covid
+--
+
+CREATE VIEW cv_county_current_summary AS
+ SELECT DISTINCT combined.date,
+    combined.county,
+    combined.statecode,
+    combined.state,
+    combined.country,
+    combined.countrycode,
+    combined.confirmed,
+    combined.confirmedincrease,
+        CASE
+            WHEN (combined.totaltestresults IS NULL) THEN NULL::numeric
+            WHEN (combined.totaltestresults = (0)::numeric) THEN (0)::numeric
+            WHEN (combined.totaltestresults > (0)::numeric) THEN (round((combined.positive / combined.totaltestresults), 2) * (100)::numeric)
+            ELSE NULL::numeric
+        END AS ppositive,
+        CASE
+            WHEN (combined.totaltestresultsincrease IS NULL) THEN NULL::numeric
+            WHEN (combined.totaltestresultsincrease = (0)::numeric) THEN (0)::numeric
+            WHEN (combined.totaltestresultsincrease > (0)::numeric) THEN (round((combined.positiveincrease / combined.totaltestresultsincrease), 2) * (100)::numeric)
+            ELSE NULL::numeric
+        END AS ppositiveincrease,
+    combined.totaltestresults,
+    combined.totaltestresultsincrease,
+    combined.death,
+    combined.deathincrease,
+    round(((combined.death / county.population) * (1000)::numeric), 0) AS deaths_per_1k,
+    round(((combined.confirmed / county.population) * (1000)::numeric), 0) AS confirmed_per_1k,
+    round(((combined.totaltestresults / county.population) * (1000)::numeric), 0) AS tests_per_1k,
+    county.population
+   FROM (((combined
+   JOIN country USING (countrycode))
+   JOIN state ON (((combined.statecode)::text = (state.ansi)::text)))
+   JOIN county USING (county, statecode))
+  WHERE (((combined.state IS NOT NULL) AND (combined.county IS NOT NULL)) AND (combined.date = ( SELECT max(combined_1.date) AS max
+   FROM combined combined_1)))
+  ORDER BY combined.countrycode, combined.statecode, combined.county;
+
+
+ALTER TABLE covid.cv_county_current_summary OWNER TO covid;
+
+--
+-- Name: cv_county_weekly; Type: VIEW; Schema: covid; Owner: covid
+--
+
+CREATE VIEW cv_county_weekly AS
+ SELECT combined.countrycode,
+    combined.statecode,
+    combined.county,
+    date_trunc('week'::text, (combined.date)::timestamp with time zone) AS week,
+    max(combined.confirmed) AS confirmed,
+    sum(combined.confirmedincrease) AS confirmedincrease,
+    max(combined.positive) AS positive,
+    sum(combined.positiveincrease) AS positiveincrease,
+    max(combined.negative) AS negative,
+    sum(combined.negativeincrease) AS negativeincrease,
+        CASE
+            WHEN (sum(combined.positiveincrease) < (1)::numeric) THEN (0)::numeric
+            ELSE (round((sum(combined.positiveincrease) / (sum(combined.positiveincrease) + sum(combined.negativeincrease))), 2) * (100)::numeric)
+        END AS perc_positive,
+    max(combined.death) AS death,
+    sum(combined.deathincrease) AS deathincrease,
+    count(combined.date) AS datect,
+    combined.sourcecode
+   FROM combined
+  WHERE (((1 = 1) AND (combined.state IS NOT NULL)) AND (combined.county IS NOT NULL))
+  GROUP BY combined.countrycode, combined.statecode, combined.county, combined.sourcecode, date_trunc('week'::text, (combined.date)::timestamp with time zone)
+  ORDER BY combined.countrycode, combined.statecode, combined.county, combined.sourcecode, date_trunc('week'::text, (combined.date)::timestamp with time zone);
+
+
+ALTER TABLE covid.cv_county_weekly OWNER TO covid;
+
+--
+-- Name: cv_county_weekly_delta; Type: VIEW; Schema: covid; Owner: covid
+--
+
+CREATE VIEW cv_county_weekly_delta AS
+ SELECT w3.countrycode,
+    w3.statecode,
+    w3.county,
+    w4.confirmed AS conf_base,
+    w4.death AS death_base,
+    w4.perc_positive AS perc_positive_base,
+    w1.confirmed AS conf_now,
+    w1.death AS death_now,
+    w1.perc_positive AS perc_positive_now,
+    v_weeks.thisweek AS week0,
+    w1.week AS week1,
+    w2.week AS week2,
+    w3.week AS week3,
+        CASE
+            WHEN (w0.datect = 7) THEN ((w0.confirmedincrease - w1.confirmedincrease))::numeric
+            ELSE (round((((w0.confirmedincrease / w0.datect) * 7))::numeric, 0) - (w1.confirmedincrease)::numeric)
+        END AS confd0,
+    (w1.confirmedincrease - w2.confirmedincrease) AS confd1,
+    (w2.confirmedincrease - w3.confirmedincrease) AS confd2,
+    (w3.confirmedincrease - w4.confirmedincrease) AS confd3,
+    (((w1.confirmedincrease)::numeric / w2.confirmed) - ((w2.confirmedincrease)::numeric / w3.confirmed)) AS confd1p,
+    (((w2.confirmedincrease)::numeric / w3.confirmed) - ((w3.confirmedincrease)::numeric / w4.confirmed)) AS confd2p,
+        CASE
+            WHEN (w0.datect = 7) THEN (w0.deathincrease - w1.deathincrease)
+            ELSE (round(((w0.deathincrease / (w0.datect)::numeric) * (7)::numeric), 0) - w1.deathincrease)
+        END AS deathd0,
+    (w1.deathincrease - w2.deathincrease) AS deathd1,
+    (w2.deathincrease - w3.deathincrease) AS deathd2,
+    (w3.deathincrease - w4.deathincrease) AS deathd3,
+    ((w1.deathincrease / w2.death) - (w2.deathincrease / w3.death)) AS deathd1p,
+    ((w2.deathincrease / w3.death) - (w3.deathincrease / w4.death)) AS deathd2p,
+        CASE
+            WHEN (w0.datect = 7) THEN (w0.perc_positive - w1.perc_positive)
+            ELSE (round(((w0.perc_positive / (w0.datect)::numeric) * (7)::numeric), 0) - w1.perc_positive)
+        END AS perc_positived0,
+    (w1.perc_positive - w2.perc_positive) AS perc_positived1,
+    (w2.perc_positive - w3.perc_positive) AS perc_positived2,
+    (w3.perc_positive - w4.perc_positive) AS perc_positived3,
+    v_weeks.thisweek,
+    v_weeks.lastweek,
+    v_weeks.twoweeks,
+    COALESCE(w0.datect, (0)::bigint) AS datect
+   FROM (((((( SELECT date_trunc('week'::text, now()) AS thisweek,
+            date_trunc('week'::text, (now() - '7 days'::interval)) AS lastweek,
+            date_trunc('week'::text, (now() - '14 days'::interval)) AS twoweeks,
+            date_trunc('week'::text, (now() - '21 days'::interval)) AS threeweeks,
+            date_trunc('week'::text, (now() - '28 days'::interval)) AS fourweeks) v_weeks
+   LEFT JOIN cv_county_weekly w4 ON ((w4.week = v_weeks.fourweeks)))
+   LEFT JOIN cv_county_weekly w3 ON (((((w3.week = v_weeks.threeweeks) AND ((w3.countrycode)::text = (w4.countrycode)::text)) AND ((w3.statecode)::text = (w4.statecode)::text)) AND ((w3.county)::text = (w4.county)::text))))
+   LEFT JOIN cv_county_weekly w2 ON (((((w2.week = v_weeks.twoweeks) AND ((w2.countrycode)::text = (w3.countrycode)::text)) AND ((w2.statecode)::text = (w3.statecode)::text)) AND ((w2.county)::text = (w3.county)::text))))
+   LEFT JOIN cv_county_weekly w1 ON (((((w1.week = v_weeks.lastweek) AND ((w1.countrycode)::text = (w3.countrycode)::text)) AND ((w1.statecode)::text = (w3.statecode)::text)) AND ((w1.county)::text = (w3.county)::text))))
+   LEFT JOIN cv_county_weekly w0 ON (((((w0.week = v_weeks.thisweek) AND ((w0.countrycode)::text = (w3.countrycode)::text)) AND ((w0.statecode)::text = (w3.statecode)::text)) AND ((w0.county)::text = (w3.county)::text))))
+  WHERE (1 = 1);
+
+
+ALTER TABLE covid.cv_county_weekly_delta OWNER TO covid;
+
+--
+-- Name: cv_national_current_summary; Type: VIEW; Schema: covid; Owner: covid
+--
+
+CREATE VIEW cv_national_current_summary AS
+ SELECT combined.date,
+    combined.country,
+    combined.countrycode,
+    country.region,
+    combined.confirmed,
+    combined.confirmedincrease,
+    (round((combined.positive / (combined.negative + combined.positive)), 2) * (100)::numeric) AS ppositive,
+    (round((combined.positiveincrease / (combined.positiveincrease + combined.negativeincrease)), 2) * (100)::numeric) AS ppositiveincrease,
+    (combined.positive + combined.negative) AS totaltestresults,
+    combined.totaltestresultsincrease,
+    combined.death,
+    combined.deathincrease,
+    round(((combined.death * (1000)::numeric) / country.population), 0) AS deaths_per_1m,
+    round(((combined.confirmed * (1000)::numeric) / country.population), 0) AS confirmed_per_1m,
+    round(((combined.totaltestresults / country.population) * (1000)::numeric), 0) AS tests_per_1m,
+    country.population
+   FROM (combined
+   JOIN country USING (countrycode))
+  WHERE ((combined.state IS NULL) AND (combined.date = ( SELECT max(combined_1.date) AS max
+      FROM combined combined_1)))
+  ORDER BY combined.countrycode;
+
+
+ALTER TABLE covid.cv_national_current_summary OWNER TO covid;
+
+--
+-- Name: cv_national_weekly; Type: VIEW; Schema: covid; Owner: covid
+--
+
+CREATE VIEW cv_national_weekly AS
+ SELECT combined.countrycode,
+    combined.statecode,
+    combined.county,
+    date_trunc('week'::text, (combined.date)::timestamp with time zone) AS week,
+    max(combined.confirmed) AS confirmed,
+    sum(combined.confirmedincrease) AS confirmedincrease,
+    max(combined.positive) AS positive,
+    sum(combined.positiveincrease) AS positiveincrease,
+    max(combined.negative) AS negative,
+    sum(combined.negativeincrease) AS negativeincrease,
+        CASE
+            WHEN (sum(combined.positiveincrease) < (1)::numeric) THEN (0)::numeric
+            ELSE (round((sum(combined.positiveincrease) / (sum(combined.positiveincrease) + sum(combined.negativeincrease))), 2) * (100)::numeric)
+        END AS perc_positive,
+    max(combined.death) AS death,
+    sum(combined.deathincrease) AS deathincrease,
+    count(combined.date) AS datect,
+    combined.sourcecode
+   FROM combined
+  WHERE (((1 = 1) AND (combined.county IS NULL)) AND (combined.state IS NULL))
+  GROUP BY combined.countrycode, combined.statecode, combined.county, combined.sourcecode, date_trunc('week'::text, (combined.date)::timestamp with time zone)
+  ORDER BY combined.countrycode, combined.statecode, combined.county, combined.sourcecode, date_trunc('week'::text, (combined.date)::timestamp with time zone);
+
+
+ALTER TABLE covid.cv_national_weekly OWNER TO covid;
+
+--
+-- Name: cv_national_weekly_delta; Type: VIEW; Schema: covid; Owner: covid
+--
+
+CREATE VIEW cv_national_weekly_delta AS
+ SELECT w3.countrycode,
+    w3.statecode,
+    w3.county,
+    w4.confirmed AS conf_base,
+    w4.death AS death_base,
+    w4.perc_positive AS perc_positive_base,
+    w1.confirmed AS conf_now,
+    w1.death AS death_now,
+    w1.perc_positive AS perc_positive_now,
+    v_weeks.thisweek AS week0,
+    w1.week AS week1,
+    w2.week AS week2,
+    w3.week AS week3,
+        CASE
+            WHEN (w0.datect = 7) THEN ((w0.confirmedincrease - w1.confirmedincrease))::numeric
+            ELSE (round((((w0.confirmedincrease / w0.datect) * 7))::numeric, 0) - (w1.confirmedincrease)::numeric)
+        END AS confd0,
+    (w1.confirmedincrease - w2.confirmedincrease) AS confd1,
+    (w2.confirmedincrease - w3.confirmedincrease) AS confd2,
+    (w3.confirmedincrease - w4.confirmedincrease) AS confd3,
+    ((w1.confirmedincrease)::numeric / w2.confirmed) AS confd1rate,
+    ((w2.confirmedincrease)::numeric / w3.confirmed) AS confd2rate,
+    ((w3.confirmedincrease)::numeric / w4.confirmed) AS confd3rate,
+    (((w1.confirmedincrease)::numeric / w2.confirmed) - ((w2.confirmedincrease)::numeric / w3.confirmed)) AS confd1p,
+    (((w2.confirmedincrease)::numeric / w3.confirmed) - ((w3.confirmedincrease)::numeric / w4.confirmed)) AS confd2p,
+        CASE
+            WHEN (w0.datect = 7) THEN (w0.deathincrease - w1.deathincrease)
+            ELSE (round(((w0.deathincrease / (w0.datect)::numeric) * (7)::numeric), 0) - w1.deathincrease)
+        END AS deathd0,
+    (w1.deathincrease - w2.deathincrease) AS deathd1,
+    (w2.deathincrease - w3.deathincrease) AS deathd2,
+    (w3.deathincrease - w4.deathincrease) AS deathd3,
+    (w1.deathincrease / w2.death) AS deathd1rate,
+    (w2.deathincrease / w3.death) AS deathd2rate,
+    (w3.deathincrease / w4.death) AS deathd3rate,
+    ((w1.deathincrease / w2.death) - (w2.deathincrease / w3.death)) AS deathd1p,
+    ((w2.deathincrease / w3.death) - (w3.deathincrease / w4.death)) AS deathd2p,
+        CASE
+            WHEN (w0.datect = 7) THEN (w0.perc_positive - w1.perc_positive)
+            ELSE (round(((w0.perc_positive / (w0.datect)::numeric) * (7)::numeric), 0) - w1.perc_positive)
+        END AS perc_positived0,
+    (w1.perc_positive - w2.perc_positive) AS perc_positived1,
+    (w2.perc_positive - w3.perc_positive) AS perc_positived2,
+    (w3.perc_positive - w4.perc_positive) AS perc_positived3,
+    v_weeks.thisweek,
+    v_weeks.lastweek,
+    v_weeks.twoweeks,
+    COALESCE(w0.datect, (0)::bigint) AS datect
+   FROM (((((( SELECT date_trunc('week'::text, now()) AS thisweek,
+            date_trunc('week'::text, (now() - '7 days'::interval)) AS lastweek,
+            date_trunc('week'::text, (now() - '14 days'::interval)) AS twoweeks,
+            date_trunc('week'::text, (now() - '21 days'::interval)) AS threeweeks,
+            date_trunc('week'::text, (now() - '28 days'::interval)) AS fourweeks) v_weeks
+   LEFT JOIN cv_national_weekly w4 ON ((w4.week = v_weeks.fourweeks)))
+   LEFT JOIN cv_national_weekly w3 ON (((w3.week = v_weeks.threeweeks) AND ((w3.countrycode)::text = (w4.countrycode)::text))))
+   LEFT JOIN cv_national_weekly w2 ON (((w2.week = v_weeks.twoweeks) AND ((w2.countrycode)::text = (w3.countrycode)::text))))
+   LEFT JOIN cv_national_weekly w1 ON (((w1.week = v_weeks.lastweek) AND ((w1.countrycode)::text = (w3.countrycode)::text))))
+   LEFT JOIN cv_national_weekly w0 ON (((w0.week = v_weeks.thisweek) AND ((w0.countrycode)::text = (w3.countrycode)::text))))
+  WHERE (1 = 1);
+
+
+ALTER TABLE covid.cv_national_weekly_delta OWNER TO covid;
+
+--
+-- Name: cv_state_current_summary; Type: VIEW; Schema: covid; Owner: covid
+--
+
+CREATE VIEW cv_state_current_summary AS
+ SELECT DISTINCT combined.date,
+    combined.statecode,
+    combined.state,
+    combined.country,
+    combined.countrycode,
+    combined.confirmed,
+    combined.confirmedincrease,
+        CASE
+            WHEN (combined.totaltestresults IS NULL) THEN NULL::numeric
+            WHEN (combined.totaltestresults = (0)::numeric) THEN (0)::numeric
+            WHEN (combined.totaltestresults > (0)::numeric) THEN (round((combined.positive / combined.totaltestresults), 2) * (100)::numeric)
+            ELSE NULL::numeric
+        END AS ppositive,
+        CASE
+            WHEN (combined.totaltestresultsincrease IS NULL) THEN NULL::numeric
+            WHEN (combined.totaltestresultsincrease = (0)::numeric) THEN (0)::numeric
+            WHEN (combined.totaltestresultsincrease > (0)::numeric) THEN (round((combined.positiveincrease / combined.totaltestresultsincrease), 2) * (100)::numeric)
+            ELSE NULL::numeric
+        END AS ppositiveincrease,
+    combined.totaltestresults,
+    combined.totaltestresultsincrease,
+    combined.death,
+    combined.deathincrease,
+    round(((combined.death * (1000000)::numeric) / state.population), 0) AS deaths_per_1m,
+    round(((combined.confirmed * (1000000)::numeric) / state.population), 0) AS confirmed_per_1m,
+    round(((combined.totaltestresults / state.population) * (1000000)::numeric), 0) AS tests_per_1m,
+    state.population
+   FROM ((combined
+   JOIN country USING (countrycode))
+   JOIN state ON ((((combined.statecode)::text = (state.ansi)::text) AND ((combined.countrycode)::text = (state.countrycode)::text))))
+  WHERE (((combined.state IS NOT NULL) AND (combined.county IS NULL)) AND (combined.date = ( SELECT max(combined_1.date) AS max
+   FROM combined combined_1)))
+  ORDER BY combined.countrycode, combined.statecode;
+
+
+ALTER TABLE covid.cv_state_current_summary OWNER TO covid;
+
+--
+-- Name: cv_state_weekly; Type: VIEW; Schema: covid; Owner: covid
+--
+
+CREATE VIEW cv_state_weekly AS
+ SELECT combined.countrycode,
+    combined.statecode,
+    combined.county,
+    date_trunc('week'::text, (combined.date)::timestamp with time zone) AS week,
+    max(combined.confirmed) AS confirmed,
+    sum(combined.confirmedincrease) AS confirmedincrease,
+    max(combined.positive) AS positive,
+    sum(combined.positiveincrease) AS positiveincrease,
+    max(combined.negative) AS negative,
+    sum(combined.negativeincrease) AS negativeincrease,
+        CASE
+            WHEN (sum(combined.positiveincrease) < (1)::numeric) THEN (0)::numeric
+            ELSE (round((sum(combined.positiveincrease) / (sum(combined.positiveincrease) + sum(combined.negativeincrease))), 2) * (100)::numeric)
+        END AS perc_positive,
+    max(combined.death) AS death,
+    sum(combined.deathincrease) AS deathincrease,
+    count(combined.date) AS datect,
+    combined.sourcecode
+   FROM combined
+  WHERE (((1 = 1) AND (combined.state IS NOT NULL)) AND (combined.county IS NULL))
+  GROUP BY combined.countrycode, combined.statecode, combined.county, combined.sourcecode, date_trunc('week'::text, (combined.date)::timestamp with time zone)
+  ORDER BY combined.countrycode, combined.statecode, combined.county, combined.sourcecode, date_trunc('week'::text, (combined.date)::timestamp with time zone);
+
+
+ALTER TABLE covid.cv_state_weekly OWNER TO covid;
+
+--
+-- Name: cv_state_weekly_delta; Type: VIEW; Schema: covid; Owner: covid
+--
+
+CREATE VIEW cv_state_weekly_delta AS
+ SELECT w3.countrycode,
+    w3.statecode,
+    w3.county,
+    w4.confirmed AS conf_base,
+    w4.death AS death_base,
+    w4.perc_positive AS perc_positive_base,
+    w1.confirmed AS conf_now,
+    w1.death AS death_now,
+    w1.perc_positive AS perc_positive_now,
+    v_weeks.thisweek AS week0,
+    w1.week AS week1,
+    w2.week AS week2,
+    w3.week AS week3,
+        CASE
+            WHEN (w0.datect = 7) THEN ((w0.confirmedincrease - w1.confirmedincrease))::numeric
+            ELSE (round((((w0.confirmedincrease / w0.datect) * 7))::numeric, 0) - (w1.confirmedincrease)::numeric)
+        END AS confd0,
+    (w1.confirmedincrease - w2.confirmedincrease) AS confd1,
+    (w2.confirmedincrease - w3.confirmedincrease) AS confd2,
+    (w3.confirmedincrease - w4.confirmedincrease) AS confd3,
+    (((w1.confirmedincrease)::numeric / w2.confirmed) - ((w2.confirmedincrease)::numeric / w3.confirmed)) AS confd1p,
+    (((w2.confirmedincrease)::numeric / w3.confirmed) - ((w3.confirmedincrease)::numeric / w4.confirmed)) AS confd2p,
+        CASE
+            WHEN (w0.datect = 7) THEN (w0.deathincrease - w1.deathincrease)
+            ELSE (round(((w0.deathincrease / (w0.datect)::numeric) * (7)::numeric), 0) - w1.deathincrease)
+        END AS deathd0,
+    (w1.deathincrease - w2.deathincrease) AS deathd1,
+    (w2.deathincrease - w3.deathincrease) AS deathd2,
+    (w3.deathincrease - w4.deathincrease) AS deathd3,
+    ((w1.deathincrease / w2.death) - (w2.deathincrease / w3.death)) AS deathd1p,
+    ((w2.deathincrease / w3.death) - (w3.deathincrease / w4.death)) AS deathd2p,
+        CASE
+            WHEN (w0.datect = 7) THEN (w0.perc_positive - w1.perc_positive)
+            ELSE (round(((w0.perc_positive / (w0.datect)::numeric) * (7)::numeric), 0) - w1.perc_positive)
+        END AS perc_positived0,
+    (w1.perc_positive - w2.perc_positive) AS perc_positived1,
+    (w2.perc_positive - w3.perc_positive) AS perc_positived2,
+    (w3.perc_positive - w4.perc_positive) AS perc_positived3,
+    v_weeks.thisweek,
+    v_weeks.lastweek,
+    v_weeks.twoweeks,
+    COALESCE(w0.datect, (0)::bigint) AS datect
+   FROM (((((( SELECT date_trunc('week'::text, now()) AS thisweek,
+            date_trunc('week'::text, (now() - '7 days'::interval)) AS lastweek,
+            date_trunc('week'::text, (now() - '14 days'::interval)) AS twoweeks,
+            date_trunc('week'::text, (now() - '21 days'::interval)) AS threeweeks,
+            date_trunc('week'::text, (now() - '28 days'::interval)) AS fourweeks) v_weeks
+   LEFT JOIN cv_state_weekly w4 ON ((w4.week = v_weeks.fourweeks)))
+   LEFT JOIN cv_state_weekly w3 ON ((((w3.week = v_weeks.threeweeks) AND ((w3.countrycode)::text = (w4.countrycode)::text)) AND ((w3.statecode)::text = (w4.statecode)::text))))
+   LEFT JOIN cv_state_weekly w2 ON ((((w2.week = v_weeks.twoweeks) AND ((w2.countrycode)::text = (w3.countrycode)::text)) AND ((w2.statecode)::text = (w3.statecode)::text))))
+   LEFT JOIN cv_state_weekly w1 ON ((((w1.week = v_weeks.lastweek) AND ((w1.countrycode)::text = (w3.countrycode)::text)) AND ((w1.statecode)::text = (w3.statecode)::text))))
+   LEFT JOIN cv_state_weekly w0 ON ((((w0.week = v_weeks.thisweek) AND ((w0.countrycode)::text = (w3.countrycode)::text)) AND ((w0.statecode)::text = (w3.statecode)::text))))
+  WHERE (1 = 1);
+
+
+ALTER TABLE covid.cv_state_weekly_delta OWNER TO covid;
 
 --
 -- Name: datasrc; Type: TABLE; Schema: covid; Owner: covid; Tablespace: 
@@ -308,6 +847,61 @@ ALTER SEQUENCE jh_us_timeseries_tsid_seq OWNED BY jh_us_timeseries.tsid;
 
 
 --
+-- Name: oyv_open_yet; Type: VIEW; Schema: covid; Owner: covid
+--
+
+CREATE VIEW oyv_open_yet AS
+ SELECT vc.date,
+    vc.countrycode,
+    vc.statecode,
+    vc.state,
+    vc.county,
+    vc.confirmed,
+    vc.death,
+    vc.totaltestresults,
+    vc.ppositive,
+    vc.confd0,
+    vc.confd1,
+    vc.ppositived0,
+    vc.ppositived1,
+    vc.deathd0,
+    vc.deathd1,
+    vc.country_population,
+    vc.population,
+    round((vc.death / (vc.population / (1000000)::numeric))) AS deaths_1m,
+    round((vc.confirmed / (vc.population / (1000000)::numeric))) AS confirmed_1m,
+    round((vc.totaltestresults / (vc.population / (1000000)::numeric))) AS tests_1m
+   FROM ( SELECT c.date,
+            c.countrycode,
+            c.statecode,
+            c.state,
+            c.county,
+            c.confirmed,
+            c.death,
+            c.totaltestresults,
+            round(((c.ppositive * (100)::double precision))::numeric, 2) AS ppositive,
+            c.confd0,
+            c.confd1,
+            round(((c.ppositived0 * (100)::double precision))::numeric, 2) AS ppositived0,
+            round(((c.ppositived1 * (100)::double precision))::numeric, 2) AS ppositived1,
+            c.deathd0,
+            c.deathd1,
+            (country.population * (1000)::numeric) AS country_population,
+                CASE
+                    WHEN (county.population IS NOT NULL) THEN county.population
+                    WHEN (state.population IS NOT NULL) THEN state.population
+                    WHEN (country.population IS NOT NULL) THEN (country.population * (1000)::numeric)
+                    ELSE NULL::numeric
+                END AS population
+           FROM (((combined c
+      JOIN country USING (countrycode))
+   LEFT JOIN state ON ((((c.statecode)::text = (state.ansi)::text) AND ((state.countrycode)::text = (c.countrycode)::text))))
+   LEFT JOIN county ON ((((county.county)::text = (c.county)::text) AND ((county.statecode)::text = (c.statecode)::text))))) vc;
+
+
+ALTER TABLE covid.oyv_open_yet OWNER TO covid;
+
+--
 -- Name: seqmisc; Type: SEQUENCE; Schema: covid; Owner: covid
 --
 
@@ -336,33 +930,6 @@ CREATE SEQUENCE seqtodo
 ALTER TABLE covid.seqtodo OWNER TO covid;
 
 --
--- Name: state; Type: TABLE; Schema: covid; Owner: covid; Tablespace: 
---
-
-CREATE TABLE state (
-    name character varying(129),
-    status character varying(56),
-    iso character varying(5) NOT NULL,
-    ansi character varying(2),
-    usps character varying(10),
-    uscg character varying(4),
-    gpo character varying(22),
-    ap character varying(22),
-    other character varying(128),
-    countrycode character varying(5)
-);
-
-
-ALTER TABLE covid.state OWNER TO covid;
-
---
--- Name: COLUMN state.countrycode; Type: COMMENT; Schema: covid; Owner: covid
---
-
-COMMENT ON COLUMN state.countrycode IS 'ansi country code';
-
-
---
 -- Name: tt_increase; Type: TABLE; Schema: covid; Owner: covid; Tablespace: 
 --
 
@@ -372,11 +939,26 @@ CREATE TABLE tt_increase (
     county character varying(128),
     date date,
     confirmed numeric(12,0),
-    confd1 numeric(12,0),
-    confirmedincrease numeric,
-    deathincrease numeric,
-    positiveincrease numeric,
-    negativeincrease numeric
+    ppositive double precision,
+    death numeric(12,0),
+    confv1 numeric(12,0),
+    deathv1 numeric(12,0),
+    positivev1 numeric(12,0),
+    ppositivev1 double precision,
+    totaltestsv1 numeric(12,0),
+    confv2 numeric(12,0),
+    deathv2 numeric(12,0),
+    positivev2 numeric(12,0),
+    ppositivev2 double precision,
+    totaltestsv2 numeric(12,0),
+    confd0 numeric,
+    deathd0 numeric,
+    positived0 numeric,
+    ppositived0 double precision,
+    confd1 numeric,
+    deathd1 numeric,
+    positived1 numeric,
+    ppositived1 double precision
 );
 
 
@@ -403,6 +985,27 @@ CREATE VIEW tt_national_increase AS
 
 
 ALTER TABLE covid.tt_national_increase OWNER TO covid;
+
+--
+-- Name: uspopulation; Type: TABLE; Schema: covid; Owner: covid; Tablespace: 
+--
+
+CREATE TABLE uspopulation (
+    sumlev numeric(2,0),
+    region numeric(1,0),
+    division numeric(2,0),
+    state numeric(2,0),
+    statename character varying(40),
+    est2019 numeric(12,0),
+    est2018 numeric(12,0),
+    perc2018 double precision
+);
+ALTER TABLE ONLY uspopulation ALTER COLUMN sumlev SET STATISTICS 0;
+ALTER TABLE ONLY uspopulation ALTER COLUMN region SET STATISTICS 0;
+ALTER TABLE ONLY uspopulation ALTER COLUMN division SET STATISTICS 0;
+
+
+ALTER TABLE covid.uspopulation OWNER TO covid;
 
 SET search_path = todos, pg_catalog;
 
@@ -543,11 +1146,11 @@ ALTER TABLE ONLY jh_us_timeseries
 
 
 --
--- Name: state_pkey; Type: CONSTRAINT; Schema: covid; Owner: covid; Tablespace: 
+-- Name: state_idx; Type: CONSTRAINT; Schema: covid; Owner: covid; Tablespace: 
 --
 
 ALTER TABLE ONLY state
-    ADD CONSTRAINT state_pkey PRIMARY KEY (iso);
+    ADD CONSTRAINT state_idx PRIMARY KEY (name, countrycode);
 
 
 SET search_path = todos, pg_catalog;
@@ -622,6 +1225,34 @@ CREATE UNIQUE INDEX combined_idx4 ON combined USING btree (state, date, county, 
 
 
 --
+-- Name: combined_idx5; Type: INDEX; Schema: covid; Owner: covid; Tablespace: 
+--
+
+CREATE INDEX combined_idx5 ON combined USING btree (positive);
+
+
+--
+-- Name: combined_idx6; Type: INDEX; Schema: covid; Owner: covid; Tablespace: 
+--
+
+CREATE INDEX combined_idx6 ON combined USING btree (totaltestresults);
+
+
+--
+-- Name: county_idx; Type: INDEX; Schema: covid; Owner: covid; Tablespace: 
+--
+
+CREATE INDEX county_idx ON county USING btree (statecode);
+
+
+--
+-- Name: county_idx1; Type: INDEX; Schema: covid; Owner: covid; Tablespace: 
+--
+
+CREATE INDEX county_idx1 ON county USING btree (county);
+
+
+--
 -- Name: jh_timeseries_idx_state; Type: INDEX; Schema: covid; Owner: covid; Tablespace: 
 --
 
@@ -661,41 +1292,6 @@ CREATE UNIQUE INDEX jh_us_timeseries_idx3 ON jh_us_timeseries USING btree (count
 --
 
 CREATE INDEX jh_us_timeseries_idx_type ON jh_us_timeseries USING btree (type);
-
-
---
--- Name: tt_increase_idx; Type: INDEX; Schema: covid; Owner: covid; Tablespace: 
---
-
-CREATE INDEX tt_increase_idx ON tt_increase USING btree (countrycode);
-
-
---
--- Name: tt_increase_idx1; Type: INDEX; Schema: covid; Owner: covid; Tablespace: 
---
-
-CREATE INDEX tt_increase_idx1 ON tt_increase USING btree (state);
-
-
---
--- Name: tt_increase_idx2; Type: INDEX; Schema: covid; Owner: covid; Tablespace: 
---
-
-CREATE INDEX tt_increase_idx2 ON tt_increase USING btree (county);
-
-
---
--- Name: tt_increase_idx3; Type: INDEX; Schema: covid; Owner: covid; Tablespace: 
---
-
-CREATE INDEX tt_increase_idx3 ON tt_increase USING btree (date);
-
-
---
--- Name: tt_increase_idx4; Type: INDEX; Schema: covid; Owner: covid; Tablespace: 
---
-
-CREATE UNIQUE INDEX tt_increase_idx4 ON tt_increase USING btree (date, county, state, countrycode);
 
 
 SET search_path = todos, pg_catalog;
