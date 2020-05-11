@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <div id="asyncticator-mount"></div>
+
     <div>
       <h3>Open Yet?</h3>
       <p>
@@ -8,7 +8,8 @@
         <a
           href="https://www.whitehouse.gov/openingamerica/#criteria"
         >guidelines</a>
-        for determining when a region is ready to re-open. This site attempts to interpret those guidelines with available data in order to answer the question for given regions.
+        for determining when a region is ready to re-open. This site uses the key gating criteria from those guidelines 
+        to answer the question for given regions.
         See our
         <router-link :to="{name: 'docs-methodology'}">methodology and rationale here.</router-link>
       </p>
