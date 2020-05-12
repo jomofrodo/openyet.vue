@@ -1,0 +1,12 @@
+    <!--  tomcat having problems loading this context from this loation.
+    Copy this file to ~tomcat/conf/Catalina/<hostname>/ROOT.xml -->
+    
+ <Context docBase="" path="" autoDeploy="false" deployOnStartup="false" reloadable="true"             
+         debug="1" crossContext="false">   
+     <Resource name="jdbc/openyetdb" auth="Container" type="javax.sql.DataSource"
+		driverClassName="org.postgresql.Driver" url="jdbc:postgresql://127.0.0.1:5432/openyetdb"
+		username="openyet" password="some-password" maxActive="20" maxIdle="10"
+		maxWaitMillis="-1" />  
+	<JarScanner scanClassPath="false" />
+	
+  </Context>  
