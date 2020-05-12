@@ -1,21 +1,26 @@
 <!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" "http://java.sun.com/dtd/web-app_2_3.dtd"
 [ 
-   <!ENTITY todos SYSTEM "./conf/covid.xml">
+   <!ENTITY todos SYSTEM "./conf/openyet.xml">
+   <!ENTITY admin SYSTEM "./conf/openyetAdmin.xml">
 ]
 >
 <web-app>
         &todos;
+        &admin;
 
 	<context-param>
 		<param-name>AppName</param-name>
-		<param-value>Covid-19 Dev</param-value>
+		<param-value>OpenYet Dev</param-value>
 	</context-param>
-	
+	<context-param>
+		<param-name>DEV_MODE</param-name>
+		<param-value>true</param-value>
+	</context-param>
 	<context-param>
 		<param-name>TemplatePath</param-name>
 		<!-- Paths are relative to the webroot / or fully specified -->
 		<!-- Separate paths with a ';' (semi-colon) -->
-		<param-value>/;/templates</param-value>
+		<param-value>/WEB-INF/templates;/</param-value>
 	</context-param>
 	
 	<!--  DB  -->
