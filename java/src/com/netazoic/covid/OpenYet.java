@@ -103,7 +103,7 @@ public class OpenYet extends ServENT {
 	}
 
 	public enum CVD_Param{
-		dataSrc, expireAll, expireExisting, country, state, sourceCode, lastUpdate, flgAdmin
+		dataSrc, expireAll, expireExisting, country, state, sourceCode, lastUpdate, flgAdmin, PRD_MODE,DEV_MODE
 	}
 
 	public enum CVD_Route{
@@ -468,7 +468,11 @@ public class OpenYet extends ServENT {
 						throws IOException, Exception {
 			String tPath = CVD_TP.Home.tPath;
 			Map<String,Object> map = new HashMap<String,Object>();
+			Map settings = getSettings();
+			String PRD_MODE = (String) settings.get(CVD_Param.PRD_MODE.name());
+			String DEV_MODE = (String) settings.get(CVD_Param.DEV_MODE.name());
 
+			if(DEV_MODE != null) map.put(CVD_Param.DEV_MODE.name(), DEV_MODE);
 			parseOutput(map, tPath, response);
 		}	
 	}

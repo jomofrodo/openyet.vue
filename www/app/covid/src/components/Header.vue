@@ -29,9 +29,9 @@
 <script>
 const headerRoutes = [
 
- {name: 'summary-grid', label: 'Summary Grid'},
  {name:'nations-static',label:'Static Feed'},
- {name:'combined-grid',label:'Combined Data'},
+ {name: 'summary-grid', label: 'Summary Data'},
+ {name:'combined-grid',label:'Time Series Data'},
   
 ];
 import { mapGetters } from "vuex";
