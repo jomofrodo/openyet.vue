@@ -46,7 +46,8 @@
     "prettier": "^1.19.1",
     "sass": "^1.26.3",
     "vue-cli-plugin-vuetify": "^2.0.5",
-    "vue-template-compiler": "^2.6.11"
+    "vue-template-compiler": "^2.6.11",
+    "webpack": "^4.43.0"
   },
   "eslintConfig": {
     "root": true,
