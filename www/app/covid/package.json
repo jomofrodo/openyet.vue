@@ -1,6 +1,6 @@
 {
-  "name": "covid-19",
-  "version": "0.1.0",
+  "name": "open-yet",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",

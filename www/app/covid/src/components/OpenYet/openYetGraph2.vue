@@ -1,8 +1,8 @@
 <template>
   <div class="graph-container">
-    <input type="checkbox" v-model="trends" value="confirmed"/> confirmed
-    <input type="checkbox" v-model="trends" value="ppositive"/> % positive
-    <input type="checkbox" v-model="trends" value="death"/> deaths
+    <input type="checkbox" v-model="trends" value="confirmed" /> confirmed
+    <input type="checkbox" v-model="trends" value="ppositive" /> % positive
+    <input type="checkbox" v-model="trends" value="death" /> deaths
     <line-chart :chart-data="cData" :options="options" />
   </div>
 </template>
@@ -22,8 +22,13 @@ export default {
         maintainAspectRatio: false
       },
       options: {},
-      trends: ['confirmed']
+      trends: ["confirmed"]
     };
+  },
+  watch: {
+    oyRec(newVal) {
+      this.oy = newVal;
+    }
   },
   computed: {
     cData() {
@@ -46,6 +51,7 @@ export default {
           //   }
         ]
       };
+      // x axis is all dates in range of baseline, week1, week2
       for (let idx in recs) {
         let rec = recs[idx];
         cd.labels.push(rec.date);
@@ -53,19 +59,15 @@ export default {
 
       let confSet = { data: [], label: "confirmed", borderColor: "black" };
       let dSet = { data: [], label: "deaths", borderColor: "red" };
-      let pposSet = {
-        data: [],
-        label: "% positive",
-        borderColor: "purple"
-      };
+      let pposSet = { data: [], label: "% positive", borderColor: "purple" };
 
       this.getDataValArray("confirmed", recs, confSet.data);
       this.getDataValArray("death", recs, dSet.data);
       this.getDataValArray("ppositive", recs, pposSet.data);
 
       if (this.trends.includes("confirmed")) cd.datasets.push(confSet);
-      if(this.trends.includes("death")) cd.datasets.push(dSet);
-      if(this.trends.includes("ppositive")) cd.datasets.push(pposSet);
+      if (this.trends.includes("death")) cd.datasets.push(dSet);
+      if (this.trends.includes("ppositive")) cd.datasets.push(pposSet);
       return cd;
     }
   },
