@@ -8,7 +8,7 @@
                   exact
                   class="nav-link"
                   active-class="active">
-                  Home</router-link>
+                  Open Yet&#63;</router-link>
               </li>
             </ul>
           </div>
@@ -29,9 +29,9 @@
 <script>
 const headerRoutes = [
 
- {name: 'summary-grid', label: 'Summary Grid'},
- {name:'nations-static',label:'Static Feed'},
- {name:'combined-grid',label:'Combined Data'},
+ {name:'docs-methodology',label:'Methodology'},
+ {name: 'summary-grid', label: 'Summary Data'},
+ {name:'combined-grid',label:'Time Series Data'},
   
 ];
 import { mapGetters } from "vuex";

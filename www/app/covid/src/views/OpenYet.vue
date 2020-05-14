@@ -84,7 +84,7 @@
             <open-yet-detail2 :oyRec="oyRec" />
           </b-tab>
           <b-tab title="graph">
-            <open-yet-graph :oyRec="oyRec" />
+            <open-yet-graph2 :oyRec="oyRec" />
           </b-tab>
         </b-tabs>
         <div class="explanatory">Data last updated: {{oyRec.date}}</div>
@@ -118,7 +118,7 @@
 import Vue from "vue";
 import joModal from "../components/joModal.vue";
 import openYetDetail2 from "../components/OpenYet/openYetDetail2.vue";
-import openYetGraph from "../components/OpenYet/openYetGraph.vue";
+import openYetGraph2 from "../components/OpenYet/openYetGraph2.vue";
 import openYetSummary from "../components/OpenYet/openYetSummary.vue";
 import MainStats from "../components/OpenYet/MainStats.vue";
 import * as mathLib from "../lib/mathLib";
@@ -151,7 +151,7 @@ export default {
   components: {
     joModal,
     openYetDetail2,
-    openYetGraph,
+    openYetGraph2,
     openYetSummary,
     MainStats,
     vueSelect

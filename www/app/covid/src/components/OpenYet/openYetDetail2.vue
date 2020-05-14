@@ -28,7 +28,7 @@
             <div class="delta CLOSED">&nbsp;</div>increasing value vs baseline
           </div>
         </th>
-        <th colspan="3">Overall Trend</th>
+        <th colspan="3">Overall Trend (change/day)</th>
       </tr>
       <tr>
         <th>Measure</th>
