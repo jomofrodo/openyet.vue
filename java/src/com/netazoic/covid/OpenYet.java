@@ -224,14 +224,16 @@ public class OpenYet extends ServENT {
 		GetDataHdlr getData = new GetDataHdlr();
 		defaultRoute = CVD_Route.home.route;
 		routeMap.put(CVD_Route.home.route, homeHdlr);
+		routeMap.put(CVD_Route.getOpenYet.route, new OpenYetDataHdlr());
+		
 		routeMap.put(CVD_Route.getCountryData.route, getData);
 		routeMap.put(CVD_Route.getCountyData.route, getData);
 		routeMap.put(CVD_Route.getStateData.route, getData);
 		routeMap.put(CVD_Route.getCombinedData.route, getData);
-		routeMap.put(CVD_Route.getOpenYet.route, getData);
 		routeMap.put(CVD_Route.getNationalSummary.route, getData);
 		routeMap.put(CVD_Route.getStateSummary.route, getData);
 		routeMap.put(CVD_Route.getCountySummary.route, getData);
+		
 		routeMap.put(CVD_Route.remoteDataStats.route, new RemoteDataStats());
 	}
 
@@ -375,6 +377,37 @@ public class OpenYet extends ServENT {
         if(updateRemoteData!=null) try{updateRemoteData.close();updateRemoteData=null;}catch(Exception ex){}
 		 */
 	}
+	public class OpenYetDataHdlr extends RouteEO{
+		// Dedicated data getter for OpenYet data
+		@Override
+		public void routeAction(HttpServletRequest request, HttpServletResponse response, Connection con,
+				HttpSession session) throws IOException, Exception {
+			String routeString = getRoutePrimary(request);
+			String q, tp,json;
+			RSObj rso = null;
+			Statement stat = null;
+			try {
+				rso = getOpenYetData(requestMap,con);
+				
+			}catch(Exception ex) {
+				logger.debug(ex.getMessage());
+				throw ex;
+			}
+			json = JSONUtil.toJSON(rso);
+			ajaxResponse(json,response);
+		}
+
+		private RSObj getOpenYetData(HashMap<String, Object> requestMap, Connection con) throws Exception {
+			String tp = CVD_TP.sql_GetOpenYetData.tPath;
+			String q = parseQuery(tp,requestMap);
+			logger.debug("q for OpenYet: " + q);
+			RSObj rso = RSObj.getRSObj(q, "countrycode", con);
+			logger.debug("Found " + rso.numRows + " records.");
+			return rso;
+		}
+		
+		
+	}
 
 	public class GetDataHdlr extends RouteEO{
 		// Retrieve and return data from application DB
@@ -418,9 +451,6 @@ public class OpenYet extends ServENT {
 					int ct = rs.getInt(1);
 					rso.numRows = ct;
 					break;
-				case getOpenYet:
-					rso = getOpenYetData(requestMap,con);
-					break;
 				case getNationalSummary:
 					tp = CVD_TP.sql_GetNationalSummary.tPath;
 					q = parseQuery(tp,requestMap);
@@ -447,13 +477,6 @@ public class OpenYet extends ServENT {
 			}finally {
 				if(stat!=null)try {stat.close(); stat = null;}catch(Exception ex) {}
 			}
-		}
-
-		private RSObj getOpenYetData(HashMap<String, Object> requestMap, Connection con) throws Exception {
-			String tp = CVD_TP.sql_GetOpenYetData.tPath;
-			String q = parseQuery(tp,requestMap);
-			RSObj rso = RSObj.getRSObj(q, "countrycode", con);
-			return rso;
 		}
 	}
 	

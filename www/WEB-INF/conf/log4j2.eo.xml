@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration status="WARN"  packages="org.apache.logging.log4j.core">
+  <Properties>
+    <Property name="ENT_LOG_FILE">ServENT.log</Property>
+    <Property name="OPENYET_LOG_FILE">OpenYet.log</Property>
+    <Property name="LOG_DIR">e:/usr/local/webapps/openyet/runtime/logs</Property>
+  </Properties>
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+    </Console>
+	<RollingFile name="OPENYET_LOG_FILE" fileName="${LOG_DIR}/${OPENYET_LOG_FILE}"
+	               filePattern="logs/$${date:yyyy-MM}/app-%d{MM-dd-yyyy}-%i.log.gz">
+	    <PatternLayout>
+	      <Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
+	    </PatternLayout>
+	    <Policies>
+	      <TimeBasedTriggeringPolicy />
+	      <SizeBasedTriggeringPolicy size="100 MB"/>
+	    </Policies>
+	</RollingFile>
+	<File name="ENT_LOG_FILE" fileName="${LOG_DIR}/${ENT_LOG_FILE}">
+      <PatternLayout>
+        <Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
+      </PatternLayout>
+    </File>
+
+  </Appenders>
+  <Loggers>
+    <Logger name="com.netazoic.covid.OpenYet" level="DEBUG" additivity="false">
+      <AppenderRef ref="OPENYET_LOG_FILE"/>
+    </Logger>
+    <Root level="DEBUG">
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+</Configuration>
