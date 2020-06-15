@@ -7,6 +7,7 @@ let Trend = class {
         this.xVals = xVals;
         this.yVals = yVals;
         let corrVals = getCorrelation(xVals,yVals);
+        let mySlope = M.getSlope(xVals,yVals);
         this.slope = fixPrec(corrVals.slope);
         this.intercept = fixPrec(corrVals.intercept);
         this.yMin = fixPrec(corrVals.yMin);
@@ -16,7 +17,7 @@ let Trend = class {
         let ctY = yValsCalc.length;
         this.yValsCalc = yValsCalc;
         this.correlation = corrVals.correlation;
-        this.growthRate = calcDeltaPerX(this.yMax,this.yMin,ctY);
+        this.growthRate = calcDeltaPerX(yValsCalc[1],yValsCalc[0],1);
         this.growthPerc = calcPercentChange(yValsCalc[1],yValsCalc[0]);
         this.trend = this.growthRate; //alias
         if(trendBL){

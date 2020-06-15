@@ -31,3 +31,4 @@ www/app/covid/yarn-error.log
 build
 covid_db.tgz
 covid_db_combined.tgz
+www/WEB-INF/conf/log4j2.xml
