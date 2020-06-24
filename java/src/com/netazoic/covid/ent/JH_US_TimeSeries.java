@@ -84,7 +84,7 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 		// Get the date of the last update
 		// US combined records always have sourcecode 'JH_US_CONF'
 		LocalDate maxDate = null;
-		String q = "SELECT max(to_date(date,'mm/dd/yy')) as maxDate FROM jh_us_timeseries WHERE type = '" + this.tsType.getCode() + "'";
+		String q = "SELECT max(date) as maxDate FROM jh_us_timeseries WHERE type = '" + this.tsType.getCode() + "'";
 		String maxDateS = SQLUtil.execSQL(q, "maxDate", con);
 		if(maxDateS==null) maxDate =  LocalDate.parse("1970-01-01");
 		else maxDate = LocalDate.parse(maxDateS);

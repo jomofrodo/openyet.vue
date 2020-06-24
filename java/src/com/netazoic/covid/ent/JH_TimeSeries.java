@@ -140,7 +140,7 @@ public class JH_TimeSeries extends rdENT<ifDataSrcWrapper>{
 	protected LocalDate getLastUpdateDate(String srcCode, Connection con) throws SQLException {
 		// Get the date of the last update
 		LocalDate maxDate = null;
-		String q = "SELECT max(to_date(date,'mm/dd/yy')) as maxDate FROM jh_timeseries WHERE type='" + this.tsType.getCode() +"'";
+		String q = "SELECT max(date) as maxDate FROM jh_timeseries WHERE type='" + this.tsType.getCode() +"'";
 		String maxDateS = SQLUtil.execSQL(q, "maxDate", con);
 		if(maxDateS==null) maxDate =  LocalDate.parse("1970-01-01");
 		else maxDate = LocalDate.parse(maxDateS);

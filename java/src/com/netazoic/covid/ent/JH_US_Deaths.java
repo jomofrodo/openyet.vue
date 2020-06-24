@@ -72,9 +72,12 @@ public class JH_US_Deaths extends JH_US_TimeSeries {
 	
 	@Override
 	public Integer createCombinedRecs(LocalDate lastUpdate) throws Exception {
-		HashMap map = new HashMap();
-		String q =  parseUtil.parseQuery(TP.sql_CREATE_COMBINED_RECS.tPath,map);
-		return SQLUtil.execSQL(q, con);
+//		HashMap map = new HashMap();
+//		String q =  parseUtil.parseQuery(TP.sql_CREATE_COMBINED_RECS.tPath,map);
+//		return SQLUtil.execSQL(q, con);
+		
+		// JH Combined recs are created in the JH_US_CONFIRMED ent
+		return 0;
 	}
 	
 	

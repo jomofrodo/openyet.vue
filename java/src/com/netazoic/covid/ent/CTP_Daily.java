@@ -8,6 +8,8 @@ import java.sql.SQLException;
 import java.sql.Savepoint;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Date;
 import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
@@ -37,7 +39,8 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
     hospitalizedIncrease - Increase from the day before.
     death - Total cumulative number of people that have died.
     deathIncrease - Increase from the day before.
-    dateChecked - ISO 8601 date of the time we saved visited their website
+    dateChecked - ISO 8601 date of the time we saved visited their website DEPRECATED
+    date - Date for which the daily totals were collected.
     total - DEPRECATED Will be removed in the future. (positive + negative + pending). Pending has been an unstable value and should not count in any totals.
 	 */
 
@@ -54,7 +57,7 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	public Integer hospitalizedIncrease;
 	public Integer death;
 	public Integer deathIncrease;
-	public String dateChecked;
+	public String date;
 
 	private static String DATA_URL = "https://covidtracking.com/api/states/daily";
 	private DataFmt dataFmt = DataFmt.JSON;
@@ -121,7 +124,7 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	protected LocalDate getLastUpdateDate(String srcCode, Connection con) throws SQLException {
 		// Get the date of the last update
 		LocalDate maxDate = null;
-		String q = "SELECT max(to_date(substring(datechecked from 1 for 10),'YYYY-MM-DD')) as maxDate FROM ctp_statesdaily";
+		String q = "SELECT max(date) as maxDate FROM ctp_statesdaily";
 		String maxDateS = SQLUtil.execSQL(q, "maxDate", con);
 		if(maxDateS==null) maxDate =  LocalDate.parse("1970-01-01");
 		else maxDate = LocalDate.parse(maxDateS);
@@ -229,13 +232,13 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 		String msgInfo;
 		String dateStr;
 		LocalDate date;
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
 		while(jsonItr.hasNext()){
 			ctrObj.ctTotalRecords.increment();
 			recMap = jsonItr.next();
-			dateStr = (String) recMap.get("dateChecked");
-			dateStr = dateStr.substring(0,dateStr.indexOf("T"));
+			dateStr =  recMap.get("date") + "";
+			//			dateStr = dateStr.substring(0,dateStr.indexOf("T"));
 			date = getDateFromDateStr(dateStr, formatter);
 			if(!date.isAfter(maxDate)) continue;
 			try{
@@ -266,13 +269,20 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 		String day;
 		String yr;
 		LocalDate date;
-		try { 
-			date = LocalDate.parse(dateStr);
+		try {
+			date = LocalDate.parse(dateStr,formatter);
 			return date;
+
+		}catch(DateTimeParseException ex) {
+			try { 
+				date = LocalDate.parse(dateStr);
+				return date;
+			}
+			catch(Exception ex2) {
+				// no bueno
+			}
 		}
-		catch(Exception ex) {
-			// no bueno
-		}
+		//Look for a date with format yyyy-MM-dd
 		dateParts = dateStr.split("-");
 		mo = dateParts[1];
 		day = dateParts[2];

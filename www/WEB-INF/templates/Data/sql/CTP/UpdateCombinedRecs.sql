@@ -23,7 +23,7 @@ FROM( SELECT country,
 	sum(totaltestresultsincrease) as totaltestresultsincrease,
 	sum(death) as death,
 	sum(deathincrease) as deathincrease,
-	to_date(substring(datechecked from 1 for 10),'YYYY-MM-DD') as date
+	date
 
 	FROM ctp_statesdaily
 	WHERE 1=1 -- countrycode = 'USA'
@@ -51,8 +51,7 @@ FROM (SELECT  *,
 	CASE 
 		WHEN totaltestresults = 0 THEN 0
 		ELSE positive/totaltestresults
-	END as ppositive,
-	to_date(substring(ctp.datechecked from 1 for 10),'YYYY-MM-DD') as date
+	END as ppositive
 	FROM ctp_statesdaily ctp) v1
 	WHERE  v1.state = combined.statecode
 	AND combined.county is null

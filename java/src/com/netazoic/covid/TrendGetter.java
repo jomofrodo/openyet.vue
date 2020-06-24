@@ -75,6 +75,46 @@ public class TrendGetter {
 		return con;
 	}
 
+	public void GetUSATrends() {
+		String q;
+		HashMap<String, Object> settings = new HashMap();
+		String tpOpenYet = CVD_TP.sql_GetOpenYetData.tPath;
+		String tpCountries = CVD_TP.sql_GetCountries.tPath;
+		String tpStates = CVD_TP.sql_GetStates.tPath;
+		RSObj rsoOpenYet;
+		TrendSet tSet;
+		PreparedStatement psWriteTrends = null;
+		try {
+			q = "SELECT * FROM country WHERE countrycode = 'USA'";
+			RSObj rsoCountries = RSObj.getRSObj(q, "countrycode", con);
+			// Get trendsets for countries
+			for (Map<String, Object> m : rsoCountries.items) {
+				String countryCode = (String) m.get("countrycode");
+				settings.put(TG_PARAM.countrycode.name(), countryCode);
+				q = parser.parseQuery(tpOpenYet, settings);
+				rsoOpenYet = RSObj.getRSObj(q, TG_PARAM.countrycode.name(), con);
+				try {
+					logger.info("Creating status entry for country: " + countryCode);
+					tSet = new TrendSet(rsoOpenYet);
+					tSet.writeTrendsToDB(psWriteTrends, con);
+				} catch (Exception ex) {
+					logger.error("Error creating TrendSet for country: " + countryCode);
+					logger.error(ex.getMessage());
+				}
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			if (psWriteTrends != null)
+				try {
+					psWriteTrends.close();
+					psWriteTrends = null;
+				} catch (Exception ex) {
+				}
+		}
+	}
+
 	public void GetTrends() {
 		String q;
 		HashMap<String, Object> settings = new HashMap();
@@ -124,7 +164,7 @@ public class TrendGetter {
 			tGetter.driverManagerUser = "openyet";
 			tGetter.driverManagerPwd = "odaddado";
 			tGetter.init();
-			tGetter.GetTrends();
+			tGetter.GetUSATrends();
 		} catch (Exception ex) {
 			logger.error(ex.getMessage());
 		}

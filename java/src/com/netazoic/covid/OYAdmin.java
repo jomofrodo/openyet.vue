@@ -121,7 +121,7 @@ public class OYAdmin extends ServENT {
 			ctrObj.ctTotalRecords.decrement();
 			throw ex;
 		} catch(Exception ex){
-			con.rollback(savePt);
+			if(!con.getAutoCommit()) con.rollback(savePt);
 			ctrObj.ctBadRecords.increment();
 			throw ex;
 		}

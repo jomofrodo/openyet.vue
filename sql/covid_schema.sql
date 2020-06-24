@@ -117,7 +117,6 @@ CREATE TABLE combined (
     deathincrease numeric(12,0),
     recovered numeric(12,0),
     recoveredincrease numeric(12,0),
-    datechecked character varying(40),
     date date,
     sourcecode character varying(25),
     confd0 double precision,
@@ -219,7 +218,6 @@ CREATE TABLE combined_bak (
     deathincrease numeric(12,0),
     recovered numeric(12,0),
     recoveredincrease numeric(12,0),
-    datechecked character varying(40),
     date date,
     sourcecode character varying(25)
 );
@@ -298,7 +296,7 @@ CREATE TABLE ctp_statesdaily (
     hospitalizedincrease numeric(12,0),
     death numeric(12,0),
     deathincrease numeric(12,0),
-    datechecked character varying(40) NOT NULL
+    date date
 );
 
 
@@ -1110,7 +1108,7 @@ ALTER TABLE ONLY jh_us_timeseries ALTER COLUMN tsid SET DEFAULT nextval('jh_us_t
 --
 
 ALTER TABLE ONLY ctp_statesdaily
-    ADD CONSTRAINT ctp_statesdaily_pkey PRIMARY KEY (state, datechecked);
+    ADD CONSTRAINT ctp_statesdaily_pkey PRIMARY KEY (state, date);
 
 
 --

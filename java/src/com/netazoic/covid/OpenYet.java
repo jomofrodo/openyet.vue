@@ -138,25 +138,27 @@ public class OpenYet extends ServENT {
 	}
 
 	public enum CVD_DataSrc  implements ifDataSrc{
-		JH_GLOBAL_CONF(JH_Global_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series new Confirmed"),
-		JH_GLOBAL_DEATHS(JH_Global_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series new deaths"),
-		JH_GLOBAL_RECOVER(JH_Global_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series new recoveries"),
-		JH_US_CONF(JH_US_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series US new Confirmed"),
-		JH_US_DEATHS(JH_US_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series US new deaths"),
+		JH_GLOBAL_CONF(JH_Global_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series new Confirmed", "JH_GLOBAL"),
+		JH_GLOBAL_DEATHS(JH_Global_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series new deaths", "JH_GLOBAL"),
+		JH_GLOBAL_RECOVER(JH_Global_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series new recoveries", "JH_GLOBAL"),
+		JH_US_CONF(JH_US_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series US new Confirmed", "JH_US"),
+		JH_US_DEATHS(JH_US_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series US new deaths", "JH_US"),
 		//		JH_US_RECOVER(JH_US_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series US new recoveries"),
-		CTP_STATES_DAILY( CTP_Daily.class, DataFmt.JSON,"Covid Tracking Project - States Daily");
+		CTP_STATES_DAILY( CTP_Daily.class, DataFmt.JSON,"Covid Tracking Project - States Daily", "CTP");
 
 		public String srcCode;
+		public String originCode;
 		ifDataType type;
 		DataFmt dataFmt;
 		Class<ifDataSrcWrapper> dswClass;
-		String desc;
+		public String desc;
 		String urlBase = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/";
-		rdENT rdEnt;
-		CVD_DataSrc( Class cl, DataFmt f, String d){
+		public rdENT rdEnt;
+		CVD_DataSrc( Class cl, DataFmt f, String d, String oc){
 			this.dswClass = cl;
 			this.dataFmt = f;
 			this.desc = d;
+			this.originCode = oc;
 			this.srcCode = this.name();
 			try {
 				this.rdEnt = (rdENT) cl.newInstance();
@@ -168,12 +170,13 @@ public class OpenYet extends ServENT {
 				e.printStackTrace();
 			}
 		}
-		CVD_DataSrc(Class cl, ifDataType t,DataFmt f, String d) {
+		CVD_DataSrc(Class cl, ifDataType t,DataFmt f, String d, String oc) {
 			this.srcCode = this.name();
 			this.dswClass = cl;
 			this.dataFmt = f;
 			this.type = t;
 			this.desc = d;
+			this.originCode = oc;
 
 		}
 
