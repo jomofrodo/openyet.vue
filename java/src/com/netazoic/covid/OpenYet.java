@@ -1,5 +1,6 @@
 package com.netazoic.covid;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -79,6 +80,7 @@ public class OpenYet extends ServENT {
 		sql_GetCounties("/Data/sql/GetCountyList.sql","Select list of counties for a given state/country"), 
 		sql_GetCountries("/Data/sql/GetCountryList.sql","Select list of countries with countrycodes"), 
 		sql_GetStates("/Data/sql/GetStateList.sql","Select list of state names/codes"),
+		sql_GetCountryStates("/Data/sql/GetCountryStateList.sql", "Select list of states for a country"),
 
 		sql_GetOpenYetData("/Data/sql/OpenYet/GetOpenYet.sql","Get data for the Open Yet page"),
 	    
@@ -103,7 +105,7 @@ public class OpenYet extends ServENT {
 	}
 
 	public enum CVD_Param{
-		dataSrc, expireAll, expireExisting, country, state, sourceCode, lastUpdate, flgAdmin, PRD_MODE,DEV_MODE
+		dataSrc, expireAll, expireExisting, country, state, sourceCode, lastUpdate, flgAdmin, PRD_MODE,DEV_MODE, countryCode, stateCode
 	}
 
 	public enum CVD_Route{
@@ -148,7 +150,7 @@ public class OpenYet extends ServENT {
 
 		public String srcCode;
 		public String originCode;
-		ifDataType type;
+		public ifDataType type;
 		DataFmt dataFmt;
 		Class<ifDataSrcWrapper> dswClass;
 		public String desc;
@@ -301,74 +303,7 @@ public class OpenYet extends ServENT {
 		return msg;
 	}
 
-	public RemoteDataRecordCtr retrieveRemoteData(String country, String state, rdENT rdent, ifRemoteDataObj rmdObj, Connection con) throws IOException, Exception, SQLException{
-		boolean flgLocalDebug = false;
-		boolean flgAutoCommitAsIFoundIt = con.getAutoCommit();
-
-		Savepoint savePt = null;
-		//		Integer ctRemoteDataRecs = 0, ctReturningRemoteData=0, ctUpdatedRemoteData=0, ctNewRemoteData=0, ctBadRecords=0;
-
-		RemoteDataRecordCtr ctrObj = new RemoteDataRecordCtr();
-
-		String fqdn = rdent.getDataURL();
-		DataFmt dataFmt = rdent.getFormat();
-		try{
-
-			HttpURLConnection http = HttpUtil.getRemoteHTTPConn(fqdn, flgDebug);
-
-			InputStream is = http.getInputStream();
-
-			if(flgLocalDebug){
-				//This will kill the input stream for any further processing
-				System.out.print(HttpUtil.getResponseString(is));
-			}
-
-			// Everything good to this point,
-
-			con.setAutoCommit(false);
-			savePt = con.setSavepoint();
-
-			//And now parse the stream
-
-			// CSV data
-			SRC_ORG srcOrg = (SRC_ORG) rdent.getSrcOrg();
-
-			switch(srcOrg) {
-			case JH_G:
-			case JH_US:
-				//Johns Hopkins CSV files
-				rdent.importRecords(rmdObj,ctrObj,logger, savePt,con,is);
-				break;
-			case CTP:
-				// Covid Tracking Project json files
-				rdent.importRecords(rmdObj, ctrObj, logger, savePt, con, is);
-			}
-			if(dataFmt.equals(DataFmt.CSV)) {
-
-			}
-			else if(dataFmt.equals(DataFmt.JSON)) {
-
-			}
-		}catch(IOException ex){
-			ctrObj.ctTotalRecords.decrement();
-			throw ex;
-		} catch(Exception ex){
-			con.rollback(savePt);
-			ctrObj.ctBadRecords.increment();
-			throw ex;
-		}
-		finally{
-			if(!con.getAutoCommit())con.commit();
-			con.setAutoCommit(flgAutoCommitAsIFoundIt);
-
-			shutDown();
-		}
-		if(ctrObj.ctTotalRecords.value > 0) reportImportStats(ctrObj);
-
-
-		return ctrObj;
-	}
-
+	
 
 
 	private void shutDown(){

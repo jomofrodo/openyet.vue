@@ -1,5 +1,6 @@
 package com.netazoic.covid.ent;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -57,7 +58,7 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 	public Integer hospitalizedIncrease;
 	public Integer death;
 	public Integer deathIncrease;
-	public String date;
+	public LocalDate date;
 
 	private static String DATA_URL = "https://covidtracking.com/api/states/daily";
 	private DataFmt dataFmt = DataFmt.JSON;
@@ -214,7 +215,7 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
-			Connection con, InputStream is) throws IOException, Exception, SQLException {
+			Connection con, BufferedInputStream is) throws IOException, Exception, SQLException {
 		LocalDate maxDate = getLastUpdateDate(this.dataSrc.getSrcCode(),con);
 		importRecords(rmdObj,maxDate,ctrObj,logger,savePt,con,is);
 
@@ -224,7 +225,7 @@ public class  CTP_Daily extends rdENT<CTP_Daily> {
 
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj, LocalDate maxDate, RemoteDataRecordCtr ctrObj, Logger logger,
-			Savepoint savePt, Connection con, InputStream is) throws IOException, Exception, SQLException {
+			Savepoint savePt, Connection con, BufferedInputStream is) throws IOException, Exception, SQLException {
 
 		HashMap<String, Object> recMap;
 		boolean flgCreate;

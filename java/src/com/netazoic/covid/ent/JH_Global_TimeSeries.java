@@ -1,5 +1,6 @@
 package com.netazoic.covid.ent;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -11,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.databind.MappingIterator;
@@ -31,6 +33,8 @@ public class JH_Global_TimeSeries extends JH_TimeSeries{
 	public String date;
 	public Integer ct;
 	public String type;
+	
+	public boolean flgDebug = true;
 
 	PreparedStatement psDeleteRemoteData;
 
@@ -74,7 +78,7 @@ public class JH_Global_TimeSeries extends JH_TimeSeries{
 	
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
-			Connection con, InputStream is) throws IOException, Exception, SQLException {
+			Connection con, BufferedInputStream is) throws IOException, Exception, SQLException {
 		LocalDate maxDate = getLastUpdateDate(this.dataSrc.getSrcCode(),con);
 		importRecords(rmdObj,maxDate,ctrObj,logger,savePt,con,is);
 
@@ -82,7 +86,7 @@ public class JH_Global_TimeSeries extends JH_TimeSeries{
 
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj,  LocalDate maxDate, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
-			Connection con, InputStream is) throws IOException, Exception, SQLException {
+			Connection con, BufferedInputStream is) throws IOException, Exception, SQLException {
 
 		//First expire existing records
 		if(maxDate == null || maxDate.equals(LocalDate.parse("1970-01-01"))) this.expireRemoteDataRecords(null);
@@ -147,7 +151,11 @@ public class JH_Global_TimeSeries extends JH_TimeSeries{
 						logger.info(ctrObj.ctTotalRecords.value + " records processed.");
 					}
 				}catch(SQLException sql) {
-					logger.error(sql.getMessage());
+					if(flgDebug) {
+						logger.log(Level.ERROR, sql.getMessage(), sql);
+					}else {
+						logger.error(sql.getMessage());
+					}
 					con.rollback(savePt);
 					ctrObj.ctBadRecords.increment();
 					if(ctrObj.ctBadRecords.value > MAX_BAD_RECORDS) {
@@ -156,7 +164,9 @@ public class JH_Global_TimeSeries extends JH_TimeSeries{
 						return;
 					}
 				}catch(Exception ex) {
-					logger.error(ex.getMessage());
+					
+					if(flgDebug) logger.log(Level.ERROR, ex.getMessage(), ex);
+					else logger.error(ex.getMessage());
 					con.rollback(savePt);
 					ctrObj.ctBadRecords.increment();
 					if(ctrObj.ctBadRecords.value > MAX_BAD_RECORDS) {

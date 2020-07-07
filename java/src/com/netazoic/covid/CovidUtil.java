@@ -17,6 +17,17 @@ public class CovidUtil {
 	
 	public static ParseUtil parser = new ParseUtil();
 
+	public static LocalDate getFirstUpdateDate(String srcCode, Connection con) throws SQLException {
+		// Get the date of the first update
+		LocalDate minDate = null;
+		String q = "SELECT min(date) as minDate FROM combined";
+		if(srcCode!=null) q += " WHERE sourcecode = '" + srcCode +"'";
+		String minDateS = SQLUtil.execSQL(q, "minDate", con);
+		if(minDateS==null) minDate =  LocalDate.parse("1970-01-01");
+		else minDate = LocalDate.parse(minDateS);
+		return minDate;
+	}
+
 	public static LocalDate getLastUpdateDate(String srcCode, Connection con) throws SQLException {
 		// Get the date of the last update
 		LocalDate maxDate = null;

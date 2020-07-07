@@ -3,15 +3,19 @@ package com.netazoic.covid.task;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.HashMap;
 import java.util.LinkedList;
 
 import org.apache.logging.log4j.LogManager;
 
 import com.netazoic.covid.CovidUtil;
+import com.netazoic.covid.XMLUtil;
 import com.netazoic.covid.OpenYet.CVD_DataSrc;
 import com.netazoic.covid.OpenYet.CVD_Param;
 import com.netazoic.covid.OpenYet.CVD_TP;
+import com.netazoic.covid.task.SimpleTask.Task_Param;
 import com.netazoic.ent.ServENT.ENT_Param;
 import com.netazoic.ent.rdENT;
 import com.netazoic.util.RemoteDataObj;
@@ -20,7 +24,7 @@ import com.netazoic.util.SQLUtil;
 public class GetCombinedData extends SimpleTask {
 	
 	CovidUtil covidUtil;
-	Boolean flgExpireRecs = false;
+	public Boolean flgExpireRecs = false;
 	
 	@SuppressWarnings("rawtypes")
 	private Integer createIncreaseStats(LocalDate lastUpdate, Connection con) throws Exception {
@@ -48,6 +52,8 @@ public class GetCombinedData extends SimpleTask {
 
 			CVD_DataSrc[] dataSrcs = CVD_DataSrc.values();
 			LocalDate lastUpdate = CovidUtil.getLastUpdateDate(null,con);
+			LocalDate firstUpdate;
+			Long ctDateEntries;
 			LinkedList<String> alreadySeen = new LinkedList<String>(); 
 			// Representative data sources
 			//			CVD_DataSrc[] dataSrcs = { CVD_DataSrc.JH_GLBL_CONF, CVD_DataSrc.JH_US_CONF};
@@ -62,14 +68,18 @@ public class GetCombinedData extends SimpleTask {
 					//Only create combined records once per source origin
 					if(alreadySeen.contains(src.originCode)) continue;
 					else alreadySeen.push(src.originCode);
-
-					RemoteDataObj rdo = getRDO(src.rdEnt,con);
-					if(flgExpireRecs) {
-						int ctExpired = src.rdEnt.expireCombinedRecs();
+					
+					RemoteDataObj rdo = getRDO(rdEnt, con);
+					if (flgExpireRecs) {
+						rdEnt.con = con;
+						int ctExpired = rdEnt.expireCombinedRecs();
 						logger.info("Expired " + ctExpired + " existing combined records");
-						//						flgExpireRecords = false;
+						// flgExpireExisting = false;
 					}
+
 					lastUpdate = CovidUtil.getLastUpdateDate(src.srcCode,con);
+					firstUpdate = CovidUtil.getFirstUpdateDate(src.srcCode,con);
+					ctDateEntries = firstUpdate.until(lastUpdate, ChronoUnit.DAYS);
 					logger.info("Create combined data for : " + src.srcCode);
 					ctCreated = CovidUtil.createCombinedData(lastUpdate,rdo, con, logger);
 					ctTotalCreated += ctCreated;
@@ -103,6 +113,9 @@ public class GetCombinedData extends SimpleTask {
 	
 	@Override
 	public void setParams(HashMap<String,String> args) {
+		String configFile = args.get(Task_Param.configFile.name());
+		HashMap<String, String> argsMap = XMLUtil.ParamMapToHashMap(configFile);
+		args.putAll(argsMap);
 		super.setParams(args);
 
 		String expireAll = (String) settings.get(CVD_Param.expireAll.name());
@@ -115,10 +128,9 @@ public class GetCombinedData extends SimpleTask {
 	public static void main(String[] args) {
 		GetCombinedData getter = new GetCombinedData();
 		HashMap<String,String> map = new HashMap<String,String>();
-		map.put(ENT_Param.TemplatePath.name(), "www/WEB-INF/templates");
-		map.put(Task_Param.jdbcURL.name(), "jdbc:postgresql://fauci:5432/openyetdb");
-		map.put(Task_Param.jdbcUser.name(), "openyet");
-		map.put(Task_Param.jdbcPwd.name(), "odaddado");
+
+		map.put(Task_Param.configFile.name(), "www/WEB-INF/conf/sys.local.xml");
+		map.put(CVD_Param.expireAll.name(), "true");
 
 		getter.setParams(map);
 		try {

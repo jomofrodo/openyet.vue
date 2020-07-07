@@ -1,5 +1,6 @@
 package com.netazoic.covid.ent;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -13,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 import com.netazoic.covid.OpenYet.CVD_DataSrc;
 import com.netazoic.covid.ent.JH_TimeSeries.JH_TP;
 import com.netazoic.ent.ENTException;
+import com.netazoic.ent.ifDataSrcWrapper.RemoteDataRecordCtr;
 import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
@@ -30,7 +32,7 @@ public class JH_US_Deaths extends JH_US_TimeSeries {
 //	private Double lat;
 //	private Double long_;
 	public Integer population;
-	public String date;
+	public LocalDate date;
 	public Integer ct;
 	public String type;
 	
@@ -80,14 +82,13 @@ public class JH_US_Deaths extends JH_US_TimeSeries {
 		return 0;
 	}
 	
-	
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
-			Connection con, InputStream is) throws IOException, Exception, SQLException {
-		
+			Connection con, BufferedInputStream is) throws IOException, Exception, SQLException {
 		LocalDate maxDate = getLastUpdateDate(this.dataSrc.getSrcCode(),con);
 		super.importRecords(rmdObj,maxDate,ctrObj,IDX_TS_START,logger,savePt,con,is);
 
 	}
+	
 
 }

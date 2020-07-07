@@ -1,4 +1,4 @@
-package com.netazoic.covid;
+package com.netazoic.covid.task;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import com.netazoic.covid.LinearRegression;
 import com.netazoic.util.RSObj;
 
 /*
@@ -187,7 +188,7 @@ public class TrendSet {
 		HashMap<String, Object>[] recsBL, recsWeek1, recsWeek2;
 
 		if (rsoOpenYet.items.length != 28) {
-			throw new Exception("Not enough records in rsoOpenYet");
+			throw new Exception("Incosistent number of records in rsoOpenYet, skipping: " + rsoOpenYet.items.length);
 		}
 		recsBL = (HashMap<String, Object>[]) Arrays.copyOfRange(rsoOpenYet.items, 0, 14);
 		recsWeek1 = (HashMap<String, Object>[]) Arrays.copyOfRange(rsoOpenYet.items, 14, 21);
@@ -216,10 +217,16 @@ public class TrendSet {
 			temp = (pposT_w1.growthPerc + pposT_w2.growthPerc) / 2;
 			pposTrendPerc = round(temp, 2);
 		}
-		temp = (deathsT_w1.growthRate + deathsT_w2.growthRate) / 2;
-		deathsTrend = round(temp, 0);
-		temp = (deathsT_w1.growthPerc + deathsT_w2.growthPerc) / 2;
-		deathsTrendPerc = round(temp, 2);
+		if(deathsT_bl != null) {
+			temp = (deathsT_w1.growthRate + deathsT_w2.growthRate) / 2;
+			deathsTrend = round(temp, 0);
+			temp = (deathsT_w1.growthPerc + deathsT_w2.growthPerc) / 2;
+			deathsTrendPerc = round(temp, 2);
+		}else {
+			deathsTrend = 0D;
+			deathsTrendPerc = 0D;
+		}
+
 
 	}
 
@@ -242,7 +249,7 @@ public class TrendSet {
 			xVals[idx] = Double.valueOf(idx + 1);
 			idx++;
 		}
-		if (sY == 0)
+		if (sY == 0) 
 			return null;
 		tr = new Trend(xVals, yVals, trBaseLine);
 		return tr;
@@ -303,6 +310,34 @@ public class TrendSet {
 		psWriteTrend = con.prepareStatement(q);
 		return psWriteTrend;
 
+	}
+
+	public void clearExistingEntries(Connection con) throws Exception {
+		Map<String, Object> lastRec = this.rso.items[rso.items.length - 1];
+		String countryCode, stateCode, county, dateStr;
+		countryCode = (String) lastRec.get(FIELD.countrycode.name());
+		stateCode = (String) lastRec.get(FIELD.statecode.name());
+		county = (String) lastRec.get(FIELD.county.name());
+		dateStr = (String) lastRec.get(FIELD.date.name());
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy");
+		LocalDate date =  LocalDate.parse(dateStr, formatter);
+		java.sql.Date sqlDate = java.sql.Date.valueOf(date);
+		
+		String q = "DELETE FROM covid.open_status WHERE countrycode = ? and date = ?";
+		PreparedStatement pStat = null;
+		try {
+			pStat = con.prepareStatement(q);
+			pStat.setString(1, countryCode);
+			pStat.setObject(2, sqlDate);
+			pStat.execute();
+			
+		}catch(Exception ex) {
+			throw ex;
+			
+		}finally {
+			if(pStat!=null) try { pStat.close();pStat = null;}catch(Exception ex) {}
+		}
+		
 	}
 
 }

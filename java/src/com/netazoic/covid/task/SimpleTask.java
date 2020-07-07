@@ -15,6 +15,8 @@ import javax.sql.DataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.netazoic.covid.XMLUtil;
+import com.netazoic.covid.task.SimpleTask.Task_Param;
 import com.netazoic.ent.ServENT;
 import com.netazoic.ent.rdENT;
 import com.netazoic.ent.ServENT.ENT_Param;
@@ -27,6 +29,7 @@ public abstract class SimpleTask extends Thread implements ifServENT {
 
 
 	public boolean flgDebug = false;
+	public boolean flgDebugTrace = true;
 
 	public ParseUtil parser = new ParseUtil();
 	public static Logger logger = LogManager.getLogger(SimpleTask.class);
@@ -34,7 +37,7 @@ public abstract class SimpleTask extends Thread implements ifServENT {
 	Connection con;
 
 	public enum Task_Param {
-		jdbcURL, jdbcUser, jdbcPwd
+		jdbcURL, jdbcUser, jdbcPwd, configFile
 	}
 	
 	public Connection getConnection (HashMap<String,String> map) throws SQLException {
@@ -77,6 +80,18 @@ public abstract class SimpleTask extends Thread implements ifServENT {
 		parser.templatePath = settings.get(ENT_Param.TemplatePath.name());
 		if(parser.templatePath==null) logger.error("Template path not set");
 	}
+	
+	public void logException(Exception ex) {
+		logger.error(ex.getMessage());
+		if(flgDebugTrace) {
+			StackTraceElement[] ste = ex.getStackTrace();
+			String stMsg = "";
+			for(StackTraceElement st : ste){
+				stMsg += st.toString() + "\n";
+			}
+			logger.debug(stMsg);
+		}
+	}
 
 	@Override
 	public abstract void run();
@@ -90,8 +105,13 @@ public abstract class SimpleTask extends Thread implements ifServENT {
 		for (String k : args.keySet()) {
 			settings.put(k, args.get(k));
 		}
+		String configFile = args.get(Task_Param.configFile.name());
+		if(configFile!=null) {
+			HashMap<String, String> argsMap = XMLUtil.ParamMapToHashMap(configFile);
+			settings.putAll(argsMap);
+		}
 		File f = new File(".");
-		String templatePath = args.get(ENT_Param.TemplatePath.name());
+		String templatePath = settings.get(ENT_Param.TemplatePath.name());
 		String path = templatePath;
 		if(!templatePath.startsWith("/")) {
 			path = f.getAbsolutePath() + "/" +  templatePath;

@@ -1,5 +1,7 @@
 package com.netazoic.covid.ent;
 
+import java.time.LocalDate;
+
 import com.netazoic.covid.OpenYet.CVD_DataSrc;
 import com.netazoic.ent.ENTException;
 import com.netazoic.ent.ifDataSrcWrapper;
@@ -10,7 +12,7 @@ public class JH_Global_Confirmed extends JH_Global_TimeSeries implements ifDataS
 	public String country;
 //	private Double lat;
 //	private Double lon;
-	public String date;
+	public LocalDate date;
 	public Integer ct;
 	public String type;
 	private static String DATA_URL = "csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv";
