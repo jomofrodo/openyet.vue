@@ -83,12 +83,13 @@ public class OpenYet extends ServENT {
 		sql_GetCountryStates("/Data/sql/GetCountryStateList.sql", "Select list of states for a country"),
 
 		sql_GetOpenYetData("/Data/sql/OpenYet/GetOpenYet.sql","Get data for the Open Yet page"),
+		sql_GetDeathCorrelation("/Data/sql/GetDeathCorrelationToConfirmedCases.sql","Get number of deaths corresponding to reported confirmed cases from x days ago"),
 	    
 	    sql_GetNationalSummary("/Data/sql/OpenYet/GetNationalSummary.sql", "Get open-yet summary data at the national level"),
 	    sql_GetStateSummary("/Data/sql/OpenYet/GetStateSummary.sql", "Get open-yet summary data at the state level"),
 	    sql_GetCountySummary("/Data/sql/OpenYet/GetCountySummary.sql", "Get open-yet summary data a the county level"),
 	    
-		sql_GetRemoteDataStats("/Data/sql/GetRemoteDataStats.sql","Get stats on all remote data tables"),
+		sql_GetRemoteDataStats("/Data/sql/GetRemoteDataStats.sql","Get stats on all remote data tables"), 
 		;
 		//Why store template path and description into variables?
 		public String tPath;
@@ -212,6 +213,10 @@ public class OpenYet extends ServENT {
 		@Override
 		public String getSrcCode() {
 			return this.srcCode;
+		}
+		@Override
+		public ifDataType getDataType() {
+			return this.type;
 		}
 
 	}

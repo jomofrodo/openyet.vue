@@ -79,7 +79,7 @@ public class JH_Global_TimeSeries extends JH_TimeSeries{
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
 			Connection con, BufferedInputStream is) throws IOException, Exception, SQLException {
-		LocalDate maxDate = getLastUpdateDate(this.dataSrc.getSrcCode(),con);
+		LocalDate maxDate = getLastUpdateDate(this.dataSrc.getSrcCode(), con);
 		importRecords(rmdObj,maxDate,ctrObj,logger,savePt,con,is);
 
 	}

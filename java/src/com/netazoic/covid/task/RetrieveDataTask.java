@@ -110,7 +110,7 @@ public class RetrieveDataTask extends SimpleTask {
 		Integer ctRemoteDataRecs = ctrObj.ctTotalRecords.value;
 		Integer ctNewRemoteData = ctrObj.ctNewRecordsCreated.value;
 		Integer ctBadRecords = ctrObj.ctBadRecords.value;
-		String msg = "Finished importing module records.\r\n";
+		String msg = "Finished importing remote records.\r\n";
 		msg += "Processed " + ctRemoteDataRecs + " records.\r\n";
 		// if(ctDuplicate > 0) msg += "Found " + ctDuplicate + " duplicate
 		// entries.\r\n";
