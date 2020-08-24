@@ -1,5 +1,6 @@
 package com.netazoic.covid.ent;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -30,7 +31,7 @@ public class JH_US_Confirmed extends JH_US_TimeSeries implements ifDataSrcWrappe
 //	private Double lat;
 //	private Double long_;
 	public Integer population;
-	public String date;
+	public LocalDate date;
 	public Integer ct;
 	public String type;
 	private int IDX_TS_START = 11;
@@ -96,13 +97,12 @@ public class JH_US_Confirmed extends JH_US_TimeSeries implements ifDataSrcWrappe
 	
 	public Integer expireCombinedRecs() throws SQLException {
 		//Expire all records of this type in the combined records table
-//		String q = "DELETE FROM covid.combined WHERE sourcecode = '" + this.dataSrc.getSrcCode() + "'";
-//		return SQLUtil.execSQL(q, con);
-		return 0;
+		String q = "DELETE FROM covid.combined WHERE sourcecode = '" + this.dataSrc.getSrcCode() + "'";
+		return SQLUtil.execSQL(q, con);
 	}
 	@Override
 	public void importRecords(ifRemoteDataObj rmdObj, RemoteDataRecordCtr ctrObj, Logger logger, Savepoint savePt,
-			Connection con, InputStream is) throws IOException, Exception, SQLException {
+			Connection con, BufferedInputStream is) throws IOException, Exception, SQLException {
 		LocalDate maxDate = getLastUpdateDate(this.dataSrc.getSrcCode(),con);
 		super.importRecords(rmdObj,maxDate,ctrObj,IDX_TS_START,logger,savePt,con,is);
 

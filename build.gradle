@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'com.netazoic'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.2-SNAPSHOT'
 sourceCompatibility = '1.8'
 //webAppDirName = 'www'
 
@@ -65,12 +65,22 @@ task retrieve(type: Copy) {
     from configurations.runtimeClasspath
 }
 
-task copyLogConf(type: Copy){
+task copyLogConfInfo(type: Copy){
 	group = 'local'
-	description = 'copy logging conf to WEB-INF/classes'
+	description = 'copy logging conf at level info to WEB-INF/classes'
 	mustRunAfter "clean"
-	from "www/WEB-INF/conf/log4j2.xml"
-	into "www/WEB-INF/classes"
+	from "www/WEB-INF/conf/log4j2.info.xml"
+	into "www/WEB-INF/classes/"
+	rename ('log4j2.info.xml','log4j2.xml')
+}
+task copyLogConfDebug(type: Copy){
+	group = 'local'
+	description = 'copy logging conf at level debug to WEB-INF/classes'
+	mustRunAfter "clean"
+	from "www/WEB-INF/conf/log4j2.debug.xml"
+	into "www/WEB-INF/classes/"
+	rename ('log4j2.debug.xml','log4j2.xml')
+	
 }
 
 eclipse {

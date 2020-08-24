@@ -1,5 +1,6 @@
 package com.netazoic.covid;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -79,14 +80,16 @@ public class OpenYet extends ServENT {
 		sql_GetCounties("/Data/sql/GetCountyList.sql","Select list of counties for a given state/country"), 
 		sql_GetCountries("/Data/sql/GetCountryList.sql","Select list of countries with countrycodes"), 
 		sql_GetStates("/Data/sql/GetStateList.sql","Select list of state names/codes"),
+		sql_GetCountryStates("/Data/sql/GetCountryStateList.sql", "Select list of states for a country"),
 
 		sql_GetOpenYetData("/Data/sql/OpenYet/GetOpenYet.sql","Get data for the Open Yet page"),
+		sql_GetDeathCorrelation("/Data/sql/GetDeathCorrelationToConfirmedCases.sql","Get number of deaths corresponding to reported confirmed cases from x days ago"),
 	    
 	    sql_GetNationalSummary("/Data/sql/OpenYet/GetNationalSummary.sql", "Get open-yet summary data at the national level"),
 	    sql_GetStateSummary("/Data/sql/OpenYet/GetStateSummary.sql", "Get open-yet summary data at the state level"),
 	    sql_GetCountySummary("/Data/sql/OpenYet/GetCountySummary.sql", "Get open-yet summary data a the county level"),
 	    
-		sql_GetRemoteDataStats("/Data/sql/GetRemoteDataStats.sql","Get stats on all remote data tables"),
+		sql_GetRemoteDataStats("/Data/sql/GetRemoteDataStats.sql","Get stats on all remote data tables"), 
 		;
 		//Why store template path and description into variables?
 		public String tPath;
@@ -103,7 +106,7 @@ public class OpenYet extends ServENT {
 	}
 
 	public enum CVD_Param{
-		dataSrc, expireAll, expireExisting, country, state, sourceCode, lastUpdate, flgAdmin, PRD_MODE,DEV_MODE
+		dataSrc, expireAll, expireExisting, country, state, sourceCode, lastUpdate, flgAdmin, PRD_MODE,DEV_MODE, countryCode, stateCode
 	}
 
 	public enum CVD_Route{
@@ -138,25 +141,27 @@ public class OpenYet extends ServENT {
 	}
 
 	public enum CVD_DataSrc  implements ifDataSrc{
-		JH_GLOBAL_CONF(JH_Global_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series new Confirmed"),
-		JH_GLOBAL_DEATHS(JH_Global_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series new deaths"),
-		JH_GLOBAL_RECOVER(JH_Global_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series new recoveries"),
-		JH_US_CONF(JH_US_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series US new Confirmed"),
-		JH_US_DEATHS(JH_US_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series US new deaths"),
+		JH_GLOBAL_CONF(JH_Global_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series new Confirmed", "JH_GLOBAL"),
+		JH_GLOBAL_DEATHS(JH_Global_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series new deaths", "JH_GLOBAL"),
+		JH_GLOBAL_RECOVER(JH_Global_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series new recoveries", "JH_GLOBAL"),
+		JH_US_CONF(JH_US_Confirmed.class, JH_TimeSeriesType.confirmed,DataFmt.CSV,"Johns Hopkins time series US new Confirmed", "JH_US"),
+		JH_US_DEATHS(JH_US_Deaths.class, JH_TimeSeriesType.dead,DataFmt.CSV,"Johns Hopkins time series US new deaths", "JH_US"),
 		//		JH_US_RECOVER(JH_US_Recovered.class, JH_TimeSeriesType.recovered,DataFmt.CSV, "Johns Hopkins time series US new recoveries"),
-		CTP_STATES_DAILY( CTP_Daily.class, DataFmt.JSON,"Covid Tracking Project - States Daily");
+		CTP_STATES_DAILY( CTP_Daily.class, DataFmt.JSON,"Covid Tracking Project - States Daily", "CTP");
 
 		public String srcCode;
-		ifDataType type;
+		public String originCode;
+		public ifDataType type;
 		DataFmt dataFmt;
 		Class<ifDataSrcWrapper> dswClass;
-		String desc;
+		public String desc;
 		String urlBase = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/";
-		rdENT rdEnt;
-		CVD_DataSrc( Class cl, DataFmt f, String d){
+		public rdENT rdEnt;
+		CVD_DataSrc( Class cl, DataFmt f, String d, String oc){
 			this.dswClass = cl;
 			this.dataFmt = f;
 			this.desc = d;
+			this.originCode = oc;
 			this.srcCode = this.name();
 			try {
 				this.rdEnt = (rdENT) cl.newInstance();
@@ -168,12 +173,13 @@ public class OpenYet extends ServENT {
 				e.printStackTrace();
 			}
 		}
-		CVD_DataSrc(Class cl, ifDataType t,DataFmt f, String d) {
+		CVD_DataSrc(Class cl, ifDataType t,DataFmt f, String d, String oc) {
 			this.srcCode = this.name();
 			this.dswClass = cl;
 			this.dataFmt = f;
 			this.type = t;
 			this.desc = d;
+			this.originCode = oc;
 
 		}
 
@@ -207,6 +213,10 @@ public class OpenYet extends ServENT {
 		@Override
 		public String getSrcCode() {
 			return this.srcCode;
+		}
+		@Override
+		public ifDataType getDataType() {
+			return this.type;
 		}
 
 	}
@@ -298,74 +308,7 @@ public class OpenYet extends ServENT {
 		return msg;
 	}
 
-	public RemoteDataRecordCtr retrieveRemoteData(String country, String state, rdENT rdent, ifRemoteDataObj rmdObj, Connection con) throws IOException, Exception, SQLException{
-		boolean flgLocalDebug = false;
-		boolean flgAutoCommitAsIFoundIt = con.getAutoCommit();
-
-		Savepoint savePt = null;
-		//		Integer ctRemoteDataRecs = 0, ctReturningRemoteData=0, ctUpdatedRemoteData=0, ctNewRemoteData=0, ctBadRecords=0;
-
-		RemoteDataRecordCtr ctrObj = new RemoteDataRecordCtr();
-
-		String fqdn = rdent.getDataURL();
-		DataFmt dataFmt = rdent.getFormat();
-		try{
-
-			HttpURLConnection http = HttpUtil.getRemoteHTTPConn(fqdn, flgDebug);
-
-			InputStream is = http.getInputStream();
-
-			if(flgLocalDebug){
-				//This will kill the input stream for any further processing
-				System.out.print(HttpUtil.getResponseString(is));
-			}
-
-			// Everything good to this point,
-
-			con.setAutoCommit(false);
-			savePt = con.setSavepoint();
-
-			//And now parse the stream
-
-			// CSV data
-			SRC_ORG srcOrg = (SRC_ORG) rdent.getSrcOrg();
-
-			switch(srcOrg) {
-			case JH_G:
-			case JH_US:
-				//Johns Hopkins CSV files
-				rdent.importRecords(rmdObj,ctrObj,logger, savePt,con,is);
-				break;
-			case CTP:
-				// Covid Tracking Project json files
-				rdent.importRecords(rmdObj, ctrObj, logger, savePt, con, is);
-			}
-			if(dataFmt.equals(DataFmt.CSV)) {
-
-			}
-			else if(dataFmt.equals(DataFmt.JSON)) {
-
-			}
-		}catch(IOException ex){
-			ctrObj.ctTotalRecords.decrement();
-			throw ex;
-		} catch(Exception ex){
-			con.rollback(savePt);
-			ctrObj.ctBadRecords.increment();
-			throw ex;
-		}
-		finally{
-			if(!con.getAutoCommit())con.commit();
-			con.setAutoCommit(flgAutoCommitAsIFoundIt);
-
-			shutDown();
-		}
-		if(ctrObj.ctTotalRecords.value > 0) reportImportStats(ctrObj);
-
-
-		return ctrObj;
-	}
-
+	
 
 
 	private void shutDown(){

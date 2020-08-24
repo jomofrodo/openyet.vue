@@ -26,7 +26,6 @@ death,
 deathincrease,
 recovered,
 recoveredincrease,
-datechecked,
 date,
 sourcecode,
 countrycode
@@ -43,13 +42,12 @@ sum(death) as death,
 sum(deathincrease) as deathincrease,
 sum(recovered) as recovered,
 sum(recoveredincrease) as recoveredincrease,
-datechecked,
 date,
 sourcecode,
 countrycode
 FROM combined
 WHERE 1=1 -- countrycode = 'USA'
 AND state is not null AND state != ''
-GROUP BY country, date, countrycode, datechecked,sourcecode;
+GROUP BY country, date, countrycode, sourcecode;
 
 commit;

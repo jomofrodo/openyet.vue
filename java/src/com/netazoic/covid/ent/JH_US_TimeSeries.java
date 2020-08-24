@@ -1,5 +1,7 @@
 package com.netazoic.covid.ent;
 
+import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -17,6 +19,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.netazoic.covid.OpenYet.CVD_DataSrc;
 import com.netazoic.ent.ENTException;
+import com.netazoic.util.FileUtil;
 import com.netazoic.util.SQLUtil;
 import com.netazoic.util.ifRemoteDataObj;
 
@@ -36,7 +39,7 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 //	private Double lat;
 //	private Double long_;
 	public Integer population;
-	public String date;
+	public LocalDate date;
 	public Integer ct;
 	public String type;
 	
@@ -84,7 +87,7 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 		// Get the date of the last update
 		// US combined records always have sourcecode 'JH_US_CONF'
 		LocalDate maxDate = null;
-		String q = "SELECT max(to_date(date,'mm/dd/yy')) as maxDate FROM jh_us_timeseries WHERE type = '" + this.tsType.getCode() + "'";
+		String q = "SELECT max(date) as maxDate FROM jh_us_timeseries WHERE type = '" + this.tsType.getCode() + "'";
 		String maxDateS = SQLUtil.execSQL(q, "maxDate", con);
 		if(maxDateS==null) maxDate =  LocalDate.parse("1970-01-01");
 		else maxDate = LocalDate.parse(maxDateS);
@@ -92,7 +95,7 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 	}
 	
 	public void importRecords(ifRemoteDataObj rmdObj, LocalDate maxDate, RemoteDataRecordCtr ctrObj, int idxTS_Start,Logger logger, Savepoint savePt,
-			Connection con, InputStream is) throws IOException, Exception, SQLException {
+			Connection con, BufferedInputStream is) throws IOException, Exception, SQLException {
 		HashMap<String, Object> recMap;
 		boolean flgCreate;
 		String uid;
@@ -106,6 +109,7 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 		LocalDate date;
 
 		Integer ct, ctNew = 0;
+		Boolean flgDebug = false;
 		recMap = new HashMap<String,Object>();
 		Map<String,String> row;
 		String[] dateParts;
@@ -114,6 +118,7 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yy");
 		CsvMapper mapper = new CsvMapper();
 		CsvSchema schema = CsvSchema.emptySchema().withHeader(); // use first row as header; otherwise defaults are fine
+		
 
 		
 		MappingIterator<Map<String,String>> itr = mapper.readerFor(Map.class)
@@ -122,7 +127,7 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 		while (itr.hasNext()) {
 
 			row = itr.next();
-			logger.debug(row.toString());
+			if(flgDebug) logger.debug(row.toString());
 			// access by column name, as defined in the header row...
 			Object[] keys =  row.keySet().toArray();
 			uid = row.get(JH_US_Source_Column.UID.name());
@@ -130,6 +135,9 @@ public class JH_US_TimeSeries extends JH_TimeSeries {
 			if(fips.contains(""))fips = "0";
 			state = row.get(JH_US_Source_Column.Province_State.name());
 			if(state!=null && state.isEmpty()) state = null;
+			//DEBUG
+//			 if(state!=null && !state.equals("Indiana"))continue;
+			//!DEBUG
 			country = row.get(JH_US_Source_Column.Country_Region.name());
 			county = row.get(JH_US_Source_Column.Admin2.name());
 			if(county!=null && county.isEmpty()) county = null;

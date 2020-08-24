@@ -1,8 +1,10 @@
 package com.netazoic.covid;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
@@ -82,9 +84,7 @@ public class OYAdmin extends ServENT {
 		DataFmt dataFmt = rdent.getFormat();
 		try{
 
-			HttpURLConnection http = HttpUtil.getRemoteHTTPConn(fqdn, flgDebug);
-
-			InputStream is = http.getInputStream();
+			BufferedInputStream is = new BufferedInputStream(new URL(fqdn).openStream());
 
 			if(flgLocalDebug){
 				//This will kill the input stream for any further processing
@@ -121,7 +121,7 @@ public class OYAdmin extends ServENT {
 			ctrObj.ctTotalRecords.decrement();
 			throw ex;
 		} catch(Exception ex){
-			con.rollback(savePt);
+			if(!con.getAutoCommit()) con.rollback(savePt);
 			ctrObj.ctBadRecords.increment();
 			throw ex;
 		}

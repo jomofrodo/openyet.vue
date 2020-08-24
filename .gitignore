@@ -31,3 +31,7 @@ www/app/covid/yarn-error.log
 build
 covid_db.tgz
 covid_db_combined.tgz
+www/WEB-INF/conf/log4j2.xml
+www/WEB-INF/conf/sys.local.xml
+ignore
+www/.vscode
