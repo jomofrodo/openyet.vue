@@ -54,7 +54,12 @@ public class RetrieveDataTask extends SimpleTask {
 
 			// Write the input stream to a local file.  Open that and use that as the input stream for our processing.
 			// To avoid timeouts in the https connection.
-			File f = FileUtil.WriteInputStreamToFile(is, "data/remotedata/" + srcOrg.getCode() + "_import.json");
+			File f = new File("data/remotedata/" + srcOrg.getCode() + "_import.json");
+			String dirPath = f.getAbsolutePath().substring(0,f.getAbsolutePath().lastIndexOf("/"));
+			File dir = new File(dirPath);
+			dir.mkdirs();
+			f.createNewFile();  // Creates file if not already present
+			f = FileUtil.WriteInputStreamToFile(is, f.getAbsolutePath() );
 			FileInputStream fis = new FileInputStream(f);
 
 			is = new BufferedInputStream(fis);
