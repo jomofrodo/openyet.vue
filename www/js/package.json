@@ -10,7 +10,7 @@
     "lodash": "^4.17.19"
   },
   "devDependencies": {
-    "grunt": "^1.1.0",
+    "grunt": "^1.5.3",
     "grunt-bowercopy": "^1.2.4"
   },
   "scripts": {
